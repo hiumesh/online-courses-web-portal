@@ -5,7 +5,7 @@ import CategoriesMenu from "./categories-menu";
 import SearchBar from "./search-bar";
 import SideMenu from "./side-menu";
 import Search from "./search";
-import data from "@/fake-data.json";
+import data from "@/lib/fake-data.json";
 
 async function getCategories() {
   return data;
