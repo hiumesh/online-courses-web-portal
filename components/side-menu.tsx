@@ -51,7 +51,7 @@ export default function SideMenu({
   const goToAllCategoryMenu = useCallback(() => {
     setAllCategory({ visible: true, category: null });
   }, []);
-  console.log(mostPopularCategory);
+
   return (
     <div className="md:hidden h-6">
       <button
