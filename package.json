@@ -6,6 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "generate-users": "npx tsc ./supabase/dummy_data/users/index.ts && node ./supabase/dummy_data/users/index.js",
+    "generate-category": "npx tsc --resolveJsonModule ./supabase/dummy_data/category/index.ts && node ./supabase/dummy_data/category/index.js",
+    "generate-topics": "npx tsc --resolveJsonModule ./supabase/dummy_data/topics/index.ts && node ./supabase/dummy_data/topics/index.js",
+    "generate-courses": "npx tsc --resolveJsonModule ./supabase/dummy_data/courses/index.ts && node ./supabase/dummy_data/courses/index.js",
+    "seed": "npx tsc --resolveJsonModule ./supabase/dummy_data/index.ts && node ./supabase/dummy_data/index.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -33,6 +38,7 @@
     "typescript": "5.1.3"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.0.2",
     "encoding": "^0.1.13",
     "supabase": "^1.68.6"
   }

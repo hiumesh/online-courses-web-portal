@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var category_1 = require("./category");
+var users_1 = require("./users");
+var courses_1 = require("./courses");
+var topics_1 = require("./topics");
+(0, users_1.default)();
+(0, category_1.default)();
+(0, topics_1.default)();
+(0, courses_1.default)();
