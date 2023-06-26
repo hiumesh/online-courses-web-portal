@@ -6,11 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "generate-users": "npx tsc ./supabase/dummy_data/users/index.ts && node ./supabase/dummy_data/users/index.js",
-    "generate-category": "npx tsc --resolveJsonModule ./supabase/dummy_data/category/index.ts && node ./supabase/dummy_data/category/index.js",
-    "generate-topics": "npx tsc --resolveJsonModule ./supabase/dummy_data/topics/index.ts && node ./supabase/dummy_data/topics/index.js",
-    "generate-courses": "npx tsc --resolveJsonModule ./supabase/dummy_data/courses/index.ts && node ./supabase/dummy_data/courses/index.js",
     "seed": "npx tsc --resolveJsonModule ./supabase/dummy_data/index.ts && node ./supabase/dummy_data/index.js",
+    "compile-dummy-data-scripts": "npx tsc --resolveJsonModule ./supabase/dummy_data/users/index.ts ./supabase/dummy_data/category/index.ts ./supabase/dummy_data/topics/index.ts ./supabase/dummy_data/courses/index.ts ./supabase/dummy_data/tags/index.ts",
     "remote-seed": "npx tsc --resolveJsonModule ./supabase/remote-seed.ts && node ./supabase/remote-seed.js",
     "lint": "next lint"
   },

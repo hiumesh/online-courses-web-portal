@@ -2,40 +2,83 @@ import { faker } from "@faker-js/faker";
 import * as fs from "fs";
 import * as path from "path";
 
-import { sub_categories } from "../category/category.json";
 import { getRandomIntInclusive } from "../utils";
 
-export default function generateTopics() {
+export default function generateTopics(sub_categories: number[]) {
   const topics = [];
-  const jsonO: { [index: number]: number[] } = {};
+  const subCategoryTopics = new Set();
+  const topicsConnection = new Set();
+  const jsonO: {
+    map_category_topics: { [index: number]: Set<number> | number[] };
+    map_topic_categories: { [index: number]: Set<number> | number[] };
+  } = { map_category_topics: {}, map_topic_categories: {} };
 
-  let id = 1;
-
-  for (let index = 0; index < sub_categories.length; index++) {
-    let range = getRandomIntInclusive(10, 22);
-    let t = [];
-    for (let x = 0; x < range; x++) {
-      t.push(id);
-      const q = `insert into topics (id, name, sub_category) values (${id++}, '${faker.string.alphanumeric(
-        { length: { min: 10, max: 15 } }
-      )}', ${sub_categories[index]});`;
-      topics.push(q);
-    }
-    jsonO[sub_categories[index]] = t;
+  for (let idx = 1; idx < 2100; idx++) {
+    topics.push(
+      `insert into public.topics (id, name) values (${idx}, '${faker.helpers
+        .unique(faker.word.noun)
+        .replace("'", " ")}');`
+    );
+    jsonO.map_topic_categories[idx] = new Set();
   }
 
-  fs.writeFileSync(
-    path.join("./supabase/dummy_data/topics", "topics.sql"),
-    topics.join("\n")
+  for (let idx = 1; idx < 4000; idx++) {
+    let topic_id = getRandomIntInclusive(1, 2099);
+    const topic_ids = Object.keys(jsonO.map_topic_categories);
+    let sub_category_id =
+      sub_categories[getRandomIntInclusive(1, sub_categories.length - 1)];
+    subCategoryTopics.add(
+      `insert into public.sub_category_topics (topic_id, sub_category_id) values (${topic_id}, ${sub_category_id});`
+    );
+    topicsConnection.add(
+      `insert into public.topic_connections (from_id, to_id) values (${
+        topic_ids[getRandomIntInclusive(0, topic_ids.length - 1)]
+      }, ${topic_ids[getRandomIntInclusive(0, topic_ids.length - 1)]});`
+    );
+    if (jsonO.map_category_topics[sub_category_id]) {
+      (jsonO.map_category_topics[sub_category_id] as Set<number>).add(topic_id);
+    } else {
+      jsonO.map_category_topics[sub_category_id] = new Set();
+      (jsonO.map_category_topics[sub_category_id] as Set<number>).add(topic_id);
+    }
+    (jsonO.map_topic_categories[topic_id] as Set<number>).add(sub_category_id);
+  }
+
+  Object.keys(jsonO.map_category_topics).forEach(
+    (key) =>
+      (jsonO.map_category_topics[key as unknown as number] = Array.from(
+        jsonO.map_category_topics[key as unknown as number]
+      ))
   );
-  console.log("Array of strings has been written to", "topics.sql");
-  fs.writeFileSync(
-    path.join("./supabase/dummy_data/topics", "topics.json"),
-    JSON.stringify(jsonO)
+
+  Object.keys(jsonO.map_topic_categories).forEach(
+    (key) =>
+      (jsonO.map_topic_categories[key as unknown as number] = Array.from(
+        jsonO.map_topic_categories[key as unknown as number]
+      ))
   );
-  console.log("Array of strings has been written to", "topics.json");
+
+  fs.appendFileSync(
+    path.join("./supabase", "seed.sql"),
+    topics
+      .join("\n")
+      .concat(
+        "\n",
+        Array.from(subCategoryTopics).join("\n"),
+        Array.from(topicsConnection).join("\n")
+      )
+  );
+  console.log("Array of strings has been written to", "seed.sql");
+
+  // fs.writeFileSync(
+  //   path.join("./supabase/dummy_data/topics", "topics.json"),
+  //   JSON.stringify(jsonO)
+  // );
+  // console.log("Array of strings has been written to", "topics.json");
+
+  return jsonO;
 }
 
 if (require.main === module) {
-  generateTopics();
+  generateTopics([]);
 }

@@ -24,10 +24,14 @@ function generateCategory() {
         jsonO.categories.push(t);
         jsonO.sub_categories = jsonO.sub_categories.concat(t.sub_categories);
     });
-    fs.writeFileSync(path.join("./supabase/dummy_data/category", "category.sql"), categories.join("\n").concat("\n", sub_categories.join("\n")));
-    console.log("Array of strings has been written to", "category.sql");
-    fs.writeFileSync(path.join("./supabase/dummy_data/category", "category.json"), JSON.stringify(jsonO));
-    console.log("Array of strings has been written to", "category.json");
+    fs.appendFileSync(path.join("./supabase", "seed.sql"), categories.join("\n").concat("\n", sub_categories.join("\n")));
+    console.log("Array of strings has been written to", "seed.sql");
+    // fs.writeFileSync(
+    //   path.join("./supabase/dummy_data/category", "category.json"),
+    //   JSON.stringify(jsonO)
+    // );
+    // console.log("Array of strings has been written to", "category.json");
+    return jsonO;
 }
 exports.default = generateCategory;
 if (require.main === module) {

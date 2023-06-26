@@ -34,10 +34,14 @@ function genearteUsers() {
             jsonO.creators.push(user.uuid);
         }
     }
-    fs.writeFileSync(path.join("./supabase/dummy_data/users", "users.sql"), users.join("\n"));
-    console.log("Array of strings has been written to", "user.sql");
-    fs.writeFileSync(path.join("./supabase/dummy_data/users", "users.json"), JSON.stringify(jsonO));
-    console.log("Array of strings has been written to", "users.json");
+    fs.writeFileSync(path.join("./supabase", "seed.sql"), users.join("\n"));
+    console.log("Array of strings has been written to", "seed.sql");
+    // fs.writeFileSync(
+    //   path.join("./supabase/dummy_data/users", "users.json"),
+    //   JSON.stringify(jsonO)
+    // );
+    // console.log("Array of strings has been written to", "users.json");
+    return jsonO;
 }
 exports.default = genearteUsers;
 if (require.main === module) {
