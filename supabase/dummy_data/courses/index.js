@@ -10,7 +10,7 @@ function createRandomCourse(categories, users, creators) {
     var randomCategoryIndex = (0, utils_1.getRandomIntInclusive)(0, categories.length - 1);
     var randomSubCategoryIndex = (0, utils_1.getRandomIntInclusive)(0, categories[randomCategoryIndex].sub_categories.length - 1);
     var instructors = faker_1.faker.helpers.multiple(function () { return creators[(0, utils_1.getRandomIntInclusive)(0, creators.length - 1)]; }, { count: (0, utils_1.getRandomIntInclusive)(1, 3) });
-    var is_paid = faker_1.faker.datatype.boolean(Math.random());
+    var is_paid = faker_1.faker.helpers.arrayElement(["PAID", "FREE"]);
     return {
         id: c_index++,
         image: faker_1.faker.image.urlPicsumPhotos({ width: 1920, height: 1080 }),
@@ -18,13 +18,30 @@ function createRandomCourse(categories, users, creators) {
         short_description: faker_1.faker.lorem.paragraph().replace("'", " "),
         category: categories[randomCategoryIndex].id,
         sub_category: categories[randomCategoryIndex].sub_categories[randomSubCategoryIndex],
-        level: (0, utils_1.getRandomIntInclusive)(1, 4),
+        level: faker_1.faker.helpers.arrayElement([
+            "ALL_LEVELS",
+            "BEGINNER",
+            "INTERMEDIATE",
+            "EXPERT",
+        ]),
         is_paid: is_paid,
-        price: is_paid ? (0, utils_1.getRandomIntInclusive)(20, 100) : 0,
+        price: is_paid === "PAID" ? (0, utils_1.getRandomIntInclusive)(20, 100) : 0,
         long_description: faker_1.faker.lorem.paragraphs(5).replace("'", " "),
         requirements: faker_1.faker.lorem.paragraph().replace("'", " "),
         course_purpose: faker_1.faker.lorem.paragraph().replace("'", " "),
-        language: faker_1.faker.helpers.arrayElement(["english", "hindi", "sanakrit"]),
+        language: faker_1.faker.helpers.arrayElement([
+            "English",
+            "Hindi",
+            "Sanskrit",
+            "Spanish",
+            "French",
+            "German",
+            "Italian",
+            "Japanese",
+            "Chinese",
+            "Russian",
+            "Other",
+        ]),
         course_promises: faker_1.faker.helpers.multiple(function () { return faker_1.faker.lorem.paragraph().replace("'", " "); }, {
             count: { min: 20, max: 30 },
         }),
@@ -38,7 +55,7 @@ function generateCourses(categories, users, creators, tagsIds, topics) {
     var courseTags = new Set();
     var _loop_1 = function (index) {
         var course = createRandomCourse(categories, users, creators);
-        courses.push("insert into courses (id, image, title, short_description, category, sub_category, level, is_paid, long_description, requirements, course_purpose, language, course_promises) values (".concat(course.id, ",'").concat(course.image, "', '").concat(course.title, "','").concat(course.short_description, "','").concat(course.category, "','").concat(course.sub_category, "', ").concat(course.level, ", ").concat(course.is_paid, ",'").concat(course.long_description, "','").concat(course.requirements, "','").concat(course.course_purpose, "','").concat(course.language, "','").concat(JSON.stringify(course.course_promises), "');"));
+        courses.push("insert into courses (id, image, title, short_description, category, sub_category, level, is_paid, long_description, requirements, course_purpose, language, course_promises) values (".concat(course.id, ",'").concat(course.image, "', '").concat(course.title, "','").concat(course.short_description, "','").concat(course.category, "','").concat(course.sub_category, "', '").concat(course.level, "', '").concat(course.is_paid, "','").concat(course.long_description, "','").concat(course.requirements, "','").concat(course.course_purpose, "','").concat(course.language, "','").concat(JSON.stringify(course.course_promises), "');"));
         if (course.is_paid) {
             courses.push("insert into public.price (course_id, amount) values (".concat(course.id, ", ").concat(course.price, ");"));
         }

@@ -14,8 +14,8 @@ interface Course {
   short_description: string;
   category: number;
   sub_category: number;
-  level: number;
-  is_paid: boolean;
+  level: string;
+  is_paid: string;
   price: number;
   long_description: string;
   requirements: string;
@@ -50,7 +50,7 @@ function createRandomCourse(
     () => creators[getRandomIntInclusive(0, creators.length - 1)],
     { count: getRandomIntInclusive(1, 3) }
   );
-  let is_paid = faker.datatype.boolean(Math.random());
+  let is_paid = faker.helpers.arrayElement(["PAID", "FREE"]);
   return {
     id: c_index++,
     image: faker.image.urlPicsumPhotos({ width: 1920, height: 1080 }),
@@ -59,13 +59,30 @@ function createRandomCourse(
     category: categories[randomCategoryIndex].id,
     sub_category:
       categories[randomCategoryIndex].sub_categories[randomSubCategoryIndex],
-    level: getRandomIntInclusive(1, 4),
+    level: faker.helpers.arrayElement([
+      "ALL_LEVELS",
+      "BEGINNER",
+      "INTERMEDIATE",
+      "EXPERT",
+    ]),
     is_paid: is_paid,
-    price: is_paid ? getRandomIntInclusive(20, 100) : 0,
+    price: is_paid === "PAID" ? getRandomIntInclusive(20, 100) : 0,
     long_description: faker.lorem.paragraphs(5).replace("'", " "),
     requirements: faker.lorem.paragraph().replace("'", " "),
     course_purpose: faker.lorem.paragraph().replace("'", " "),
-    language: faker.helpers.arrayElement(["english", "hindi", "sanakrit"]),
+    language: faker.helpers.arrayElement([
+      "English",
+      "Hindi",
+      "Sanskrit",
+      "Spanish",
+      "French",
+      "German",
+      "Italian",
+      "Japanese",
+      "Chinese",
+      "Russian",
+      "Other",
+    ]),
     course_promises: faker.helpers.multiple(
       () => faker.lorem.paragraph().replace("'", " "),
       {
@@ -108,7 +125,7 @@ export default function generateCourses(
         course.id
       },'${course.image}', '${course.title}','${course.short_description}','${
         course.category
-      }','${course.sub_category}', ${course.level}, ${course.is_paid},'${
+      }','${course.sub_category}', '${course.level}', '${course.is_paid}','${
         course.long_description
       }','${course.requirements}','${course.course_purpose}','${
         course.language

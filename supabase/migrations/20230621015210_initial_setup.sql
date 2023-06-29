@@ -1,3 +1,11 @@
+-- types
+
+create type course_level_enum as enum ('ALL_LEVELS', 'BEGINNER', 'INTERMEDIATE', 'EXPERT');
+create type course_access_enum as enum ('PAID', 'FREE');
+create type language_enum AS enum ('English', 'Hindi', 'Sanskrit', 'Spanish', 'French', 'German', 'Italian', 'Japanese', 'Chinese', 'Russian', 'Other');
+
+-- tables
+
 create table
   public.user_profile (
     user_id uuid not null,
@@ -9,35 +17,6 @@ create table
     constraint user_profile_pkey primary key (user_id),
     constraint user_profile_user_id_fkey foreign key (user_id) references auth.users (id) on delete cascade
   ) tablespace pg_default;
-
-create or replace function public.create_user(
-    user_id uuid,
-    username text,
-    email text,
-    password text,
-    avatar text,
-    first_name text,
-    last_name text,
-    account_type text
-) returns void as $$
-  declare
-  encrypted_pw text;
-begin
-  encrypted_pw := crypt(password, gen_salt('bf'));
-  
-  insert into auth.users
-    (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, recovery_token, recovery_sent_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
-  values
-    ('00000000-0000-0000-0000-000000000000', user_id, 'authenticated', 'authenticated', email, encrypted_pw, '2023-05-03 19:41:43.585805+00', '', '2023-04-22 13:10:03.275387+00', '2023-04-22 13:10:31.458239+00', '{"provider":"email","providers":["email"]}', '{}', '2023-05-03 19:41:43.580424+00', '2023-05-03 19:41:43.585948+00');
-  
-  insert into auth.identities (id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
-  values
-    (user_id, user_id, format('{"sub":"%s","email":"%s"}', user_id::text, email)::jsonb, 'email', '2023-05-03 19:41:43.582456+00', '2023-05-03 19:41:43.582497+00', '2023-05-03 19:41:43.582497+00');
-
-  insert into public.user_profile (user_id, username, avatar, first_name, last_name, account_type) VALUES (user_id, username, avatar, first_name, last_name, account_type);
-end;
-$$ language plpgsql;
-
 
 create table
   public.category (
@@ -101,12 +80,12 @@ create table
     short_description text null,
     category bigint not null,
     sub_category bigint not null,
-    level int default 1 not null,
+    level course_level_enum default 'ALL_LEVELS' not null,
     long_description text null,
     requirements text null,
     course_purpose text null,
-    language text not null,
-    is_paid boolean default true not null,
+    language language_enum not null,
+    is_paid course_access_enum default 'PAID' not null,
     course_promises json null,
     avg_rating decimal(10,2) default 0 not null,
     created_at timestamp with time zone null default now(),
@@ -188,6 +167,35 @@ create table
     constraint course_review_user_id_and_course_id_composite_key unique (user_id, course_id)
   ) tablespace pg_default;
 
+-- views
+
+create or replace view courses_sm as
+select courses.id, category.name as category, sub_category.name as sub_category, courses.avg_rating, courses.language, courses.is_paid, courses.level, topics.name as topic
+from
+  courses
+  join category on category.id = courses.category
+  join sub_category on sub_category.id = courses.sub_category
+  join course_topics on course_topics.course_id = courses.id
+  join topics on topics.id = course_topics.topic_id;
+
+create or replace view courses_md as
+select courses.id, courses.image, courses.title, courses.short_description, category.name as category, sub_category.name as sub_category, user_profile.username as instructor, courses.avg_rating, count(distinct enrollment.id) as enrollment, courses.is_paid, courses.level, price.amount as amount, tags.name as tag, topics.name as topic
+from
+  courses
+  join category on category.id = courses.category
+  join sub_category on sub_category.id = courses.sub_category
+  join course_instructor on course_instructor.course_id = courses.id
+  join user_profile on course_instructor.user_id = user_profile.user_id
+  join course_tags on course_tags.course_id = courses.id
+  join tags on tags.id = course_tags.tag_id
+  join course_topics on course_topics.course_id = courses.id
+  join enrollment on enrollment.course_id = courses.id
+  join price on price.course_id = courses.id
+  join topics on topics.id = course_topics.topic_id
+group by
+  courses.id, category.name, sub_category.name, user_profile.username, price.amount, tags.name, topics.name;
+
+-- function
 
 create or replace function update_average_rating()
 returns trigger as 
@@ -207,8 +215,147 @@ begin
 end;
 $$ language plpgsql;
 
+create or replace function public.create_user(
+    user_id uuid,
+    username text,
+    email text,
+    password text,
+    avatar text,
+    first_name text,
+    last_name text,
+    account_type text
+) returns void as $$
+  declare
+  encrypted_pw text;
+begin
+  encrypted_pw := crypt(password, gen_salt('bf'));
+  
+  insert into auth.users
+    (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, recovery_token, recovery_sent_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+  values
+    ('00000000-0000-0000-0000-000000000000', user_id, 'authenticated', 'authenticated', email, encrypted_pw, '2023-05-03 19:41:43.585805+00', '', '2023-04-22 13:10:03.275387+00', '2023-04-22 13:10:31.458239+00', '{"provider":"email","providers":["email"]}', '{}', '2023-05-03 19:41:43.580424+00', '2023-05-03 19:41:43.585948+00');
+  
+  insert into auth.identities (id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+  values
+    (user_id, user_id, format('{"sub":"%s","email":"%s"}', user_id::text, email)::jsonb, 'email', '2023-05-03 19:41:43.582456+00', '2023-05-03 19:41:43.582497+00', '2023-05-03 19:41:43.582497+00');
+
+  insert into public.user_profile (user_id, username, avatar, first_name, last_name, account_type) VALUES (user_id, username, avatar, first_name, last_name, account_type);
+end;
+$$ language plpgsql;
+
+create or replace function get_category_filters(
+  categories text[],
+  sub_categories text[],
+  topics text[],
+  levels text[],
+  rating numeric,
+  languages text[],
+  price text[]
+) returns json as
+$$
+declare
+  filteredcourses bigint[];
+  response json;
+begin
+
+  if topics is not null then
+    select array(select
+      id
+    from
+      courses_sm
+    where
+      (categories is null or category in (SELECT unnest(categories)))
+      AND (sub_categories is null or sub_category in (select unnest(sub_categories)))
+      AND (levels is null or level in (select unnest(levels)))
+      AND (rating is null or avg_rating >= rating)
+      AND (languages is null or language in (select unnest(languages)))
+      AND (price is null or is_paid in (select unnest(price)))
+      AND (topics is null or topic in (select unnest(topics)))
+    group by
+      id
+    having
+      COUNT(topic) = array_length(topics, 1)) into filteredcourses;
+  else 
+    select array(select
+      id
+    from
+      courses_sm
+    where
+      (categories is null or category in (SELECT unnest(categories)))
+      AND (sub_categories is null or sub_category in (select unnest(sub_categories)))
+      AND (levels is null or level in (select unnest(levels)))
+      AND (rating is null or avg_rating >= rating)
+      AND (languages is null or language in (select unnest(languages)))
+      AND (price is null or is_paid in (select unnest(price)))
+    group by
+      id) into filteredcourses;
+  end if;
+
+  select json_build_object (
+    'grouped', 
+    (select json_agg(row_to_json(t))
+      from (select
+        category, 
+        COUNT(distinct case when avg_rating >= 3 then id end) as rating_3_up, 
+        COUNT(distinct case when avg_rating >= 3.5 then id end) as rating_3_half_up, 
+        COUNT(distinct case when avg_rating >= 4 then id end) as rating_4_up, 
+        COUNT(distinct case when avg_rating >= 4.5 then id end) as rating_4_half_up, 
+        COUNT(distinct case when is_paid = 'PAID' then id end) as paid, 
+        COUNT(distinct case when is_paid = 'FREE' then id end) as free, 
+        COUNT(distinct case when level = 'ALL_LEVELS' then id end) as all_levels, 
+        COUNT(distinct case when level = 'BEGINNER' then id end) as beginner, 
+        COUNT(distinct case when level = 'INTERMEDIATE' then id end) as intermediate, 
+        COUNT(distinct case when level = 'EXPERT' then id end) as expert
+      from 
+        courses_sm
+      where
+        id in (select unnest(filteredcourses))
+      group by
+        category) t
+    ),
+    'topics',
+    (
+      select json_agg(row_to_json(t))
+      from (
+        select
+          topic, 
+          COUNT(distinct id) as topic_count
+        from 
+          courses_sm
+        where
+          id in (select unnest(filteredcourses))
+        group by
+          topic
+        order by topic_count desc
+        limit 20
+      ) t
+    ),
+    'sub_category',
+    (
+      select json_agg(row_to_json(t))
+      from (
+        select
+          sub_category, 
+          COUNT(distinct id) as sub_category_count
+        from 
+          courses_sm
+        where
+          id in (select unnest(filteredcourses))
+        group by
+          sub_category
+        order by sub_category_count desc
+      ) t
+    )
+  ) into response;
+
+  return response;
+end;
+$$
+language plpgsql;
+
+-- triggers
+
 create trigger update_average_rating_trigger
 after insert on course_review
 for each row
 execute procedure update_average_rating();
-
