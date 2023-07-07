@@ -14,13 +14,11 @@ import data from "@/lib/fake-data.json";
 import Link from "next/link";
 import { UserNav } from "./user-nav";
 
-async function getCategories() {
-  return data;
-}
-
 export default async function Navbar() {
-  const data = await getCategories();
   const supabase = createServerComponentClient({ cookies });
+  let { data: category, error } = await supabase
+    .from("category")
+    .select(`id, name, sub_category ( id, name )`);
   const session = await supabase.auth.getUser();
 
   return (
@@ -33,7 +31,7 @@ export default async function Navbar() {
         <div className="relative group hidden md:block">
           <button className="group-hover:text-primary-blue">Categories</button>
           <div className="hidden absolute top-6 py-6 group-hover:block">
-            <CategoriesMenu categories={data.Categories} />
+            <CategoriesMenu categories={category} />
           </div>
         </div>
         <div className="hidden md:block flex-1">
@@ -86,6 +84,19 @@ export default async function Navbar() {
           </button>
         </div>
       </div>
+      {session.data.user && (
+        <ul className="flex justify-center items-center gap-4 p-4 border-t">
+          {category?.slice(0, 8)?.map((c) => (
+            <Link
+              key={c.id}
+              className="hover:text-primary-blue hover:cursor-pointer"
+              href={`/courses/${c.name}`}
+            >
+              {c.name}
+            </Link>
+          ))}
+        </ul>
+      )}
     </nav>
   );
 }

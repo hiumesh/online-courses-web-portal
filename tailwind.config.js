@@ -5,6 +5,7 @@ module.exports = {
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
   ],
   theme: {
     container: {
@@ -21,6 +22,30 @@ module.exports = {
         background: "#e4eff1",
         "primary-button": "#487d89",
         "secondary-button": "#fcfdfd",
+        blueShades: {
+          text: "#336699",
+          background: "#EDF2F8",
+        },
+        greenShades: {
+          text: "#006633",
+          background: "#EAF5EB",
+        },
+        redShades: {
+          text: "#990000",
+          background: "#F9EAEA",
+        },
+        yellowShades: {
+          text: "#996600",
+          background: "#FDF4E5",
+        },
+        purpleShades: {
+          text: "#663366",
+          background: "#F5EDF5",
+        },
+        orangeShades: {
+          text: "#994C00",
+          background: "#FDF4E9",
+        },
         accent: "#518c9a",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -55,10 +80,6 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-      },
-      boxShadow: {
-        trello:
-          "rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px",
       },
       borderRadius: {
         lg: "var(--radius)",

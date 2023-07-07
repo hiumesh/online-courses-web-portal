@@ -3,7 +3,7 @@ export type Json =
   | number
   | boolean
   | null
-  | { [key: string]: Json }
+  | { [key: string]: Json | undefined }
   | Json[]
 
 export interface Database {
@@ -51,6 +51,18 @@ export interface Database {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "course_instructor_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_md"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_instructor_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_sm"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "course_instructor_user_id_fkey"
             columns: ["user_id"]
             referencedRelation: "users"
@@ -91,6 +103,18 @@ export interface Database {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "course_review_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_md"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_review_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_sm"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "course_review_user_id_fkey"
             columns: ["user_id"]
             referencedRelation: "users"
@@ -98,15 +122,98 @@ export interface Database {
           }
         ]
       }
+      course_tags: {
+        Row: {
+          course_id: number
+          tag_id: number
+        }
+        Insert: {
+          course_id: number
+          tag_id: number
+        }
+        Update: {
+          course_id?: number
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_tags_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_tags_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_md"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_tags_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_sm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      course_topics: {
+        Row: {
+          course_id: number
+          topic_id: number
+        }
+        Insert: {
+          course_id: number
+          topic_id: number
+        }
+        Update: {
+          course_id?: number
+          topic_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_topics_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_topics_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_md"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_topics_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_sm"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       courses: {
         Row: {
+          avg_rating: number
           category: number
           course_promises: Json | null
           course_purpose: string | null
           created_at: string | null
           id: number
           image: string | null
+          is_paid: boolean
           language: string
+          level: number
           long_description: string | null
           requirements: string | null
           short_description: string | null
@@ -115,13 +222,16 @@ export interface Database {
           updated_at: string | null
         }
         Insert: {
+          avg_rating?: number
           category: number
           course_promises?: Json | null
           course_purpose?: string | null
           created_at?: string | null
           id?: number
           image?: string | null
+          is_paid?: boolean
           language: string
+          level?: number
           long_description?: string | null
           requirements?: string | null
           short_description?: string | null
@@ -130,13 +240,16 @@ export interface Database {
           updated_at?: string | null
         }
         Update: {
+          avg_rating?: number
           category?: number
           course_promises?: Json | null
           course_purpose?: string | null
           created_at?: string | null
           id?: number
           image?: string | null
+          is_paid?: boolean
           language?: string
+          level?: number
           long_description?: string | null
           requirements?: string | null
           short_description?: string | null
@@ -186,9 +299,70 @@ export interface Database {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "enrollment_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_md"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_sm"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "enrollment_user_id_fkey"
             columns: ["user_id"]
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      price: {
+        Row: {
+          amount: number | null
+          course_id: number
+          currency: string | null
+          end_date: string | null
+          id: number
+          is_promotional: boolean | null
+          start_date: string | null
+        }
+        Insert: {
+          amount?: number | null
+          course_id: number
+          currency?: string | null
+          end_date?: string | null
+          id?: number
+          is_promotional?: boolean | null
+          start_date?: string | null
+        }
+        Update: {
+          amount?: number | null
+          course_id?: number
+          currency?: string | null
+          end_date?: string | null
+          id?: number
+          is_promotional?: boolean | null
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_md"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses_sm"
             referencedColumns: ["id"]
           }
         ]
@@ -224,36 +398,100 @@ export interface Database {
           }
         ]
       }
+      sub_category_topics: {
+        Row: {
+          sub_category_id: number
+          topic_id: number
+        }
+        Insert: {
+          sub_category_id: number
+          topic_id: number
+        }
+        Update: {
+          sub_category_id?: number
+          topic_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_category_topics_sub_category_id_fkey"
+            columns: ["sub_category_id"]
+            referencedRelation: "sub_category"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_category_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      tags: {
+        Row: {
+          id: number
+          name: string
+        }
+        Insert: {
+          id?: number
+          name: string
+        }
+        Update: {
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      topic_connections: {
+        Row: {
+          from_id: number
+          id: number
+          to_id: number
+        }
+        Insert: {
+          from_id: number
+          id?: number
+          to_id: number
+        }
+        Update: {
+          from_id?: number
+          id?: number
+          to_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_connections_from_id_fkey"
+            columns: ["from_id"]
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_connections_to_id_fkey"
+            columns: ["to_id"]
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       topics: {
         Row: {
           created_at: string | null
           description: string | null
           id: number
           name: string
-          sub_category: number
         }
         Insert: {
           created_at?: string | null
           description?: string | null
           id?: number
           name: string
-          sub_category: number
         }
         Update: {
           created_at?: string | null
           description?: string | null
           id?: number
           name?: string
-          sub_category?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "topics_category_fkey"
-            columns: ["sub_category"]
-            referencedRelation: "sub_category"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       user_profile: {
         Row: {
@@ -291,69 +529,86 @@ export interface Database {
       }
     }
     Views: {
-      [_ in never]: never
+      courses_md: {
+        Row: {
+          amount: number | null
+          avg_rating: number | null
+          category: string | null
+          enrollment: number | null
+          id: number | null
+          image: string | null
+          instructor: string | null
+          is_paid: boolean | null
+          level: number | null
+          short_description: string | null
+          sub_category: string | null
+          tag: string | null
+          title: string | null
+          topic: string | null
+        }
+        Relationships: []
+      }
+      courses_sm: {
+        Row: {
+          avg_rating: number | null
+          category: string | null
+          id: number | null
+          is_paid: boolean | null
+          language: string | null
+          level: number | null
+          sub_category: string | null
+          topic: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      create_user:
-        | {
-            Args: {
-              email: string
-              password: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              username: string
-              email: string
-              password: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              username: string
-              email: string
-              password: string
-              avatar: string
-              first_name: string
-              last_name: string
-              account_type: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              user_id: string
-              username: string
-              email: string
-              password: string
-              avatar: string
-              first_name: string
-              last_name: string
-              account_type: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              user_id: string
-              username: string
-              email: string
-              password: string
-              avatar: string
-              first_name: string
-              last_name: string
-              account_type: string
-            }
-            Returns: undefined
-          }
+      create_user: {
+        Args: {
+          user_id: string
+          username: string
+          email: string
+          password: string
+          avatar: string
+          first_name: string
+          last_name: string
+          account_type: string
+        }
+        Returns: undefined
+      }
+      get_category_filters: {
+        Args: {
+          categories: string[]
+          sub_categories: string[]
+          topics: string[]
+          levels: number[]
+          rating: number
+          languages: string[]
+          price: boolean[]
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      filter_table_one: {
+        category: string
+        rating_3_up: number
+        rating_3_half_up: number
+        rating_4_up: number
+        rating_4_half_up: number
+        paid: number
+        free: number
+        level1: number
+        level2: number
+        level3: number
+        level4: number
+      }
+      id_table: {
+        id: number
+      }
     }
   }
 }

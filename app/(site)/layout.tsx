@@ -7,7 +7,6 @@ export default function SiteLayout({
 }) {
   return (
     <>
-      {/* @ts-expect-error Server Component */}
       <Navbar />
       {children}
     </>
