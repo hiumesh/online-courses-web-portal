@@ -88,6 +88,8 @@ create table
     is_paid course_access_enum default 'PAID' not null,
     course_promises json null,
     avg_rating decimal(10,2) default 0 not null,
+    review_count bigint default 0 not null,
+    enrollment_count bigint default 0 not null,
     created_at timestamp with time zone null default now(),
     updated_at timestamp with time zone null default now(),
     constraint courses_pkey primary key (id),
@@ -179,19 +181,18 @@ from
   join topics on topics.id = course_topics.topic_id;
 
 create or replace view courses_md as
-select courses.id, courses.image, courses.title, courses.short_description, category.name as category, sub_category.name as sub_category, user_profile.username as instructor, courses.avg_rating, count(distinct enrollment.id) as enrollment, courses.is_paid, courses.level, price.amount as amount, tags.name as tag, topics.name as topic
+select courses.id, courses.image, courses.title, courses.short_description, courses.enrollment_count, courses.created_at, category.name as category, sub_category.name as sub_category, user_profile.username as instructor, courses.avg_rating, courses.is_paid, courses.level, price.amount as amount, tags.name as tag, topics.name as topic, courses.language, courses.review_count
 from
   courses
   join category on category.id = courses.category
   join sub_category on sub_category.id = courses.sub_category
   join course_instructor on course_instructor.course_id = courses.id
   join user_profile on course_instructor.user_id = user_profile.user_id
-  join course_tags on course_tags.course_id = courses.id
-  join tags on tags.id = course_tags.tag_id
   join course_topics on course_topics.course_id = courses.id
-  join enrollment on enrollment.course_id = courses.id
-  join price on price.course_id = courses.id
   join topics on topics.id = course_topics.topic_id
+  left join price on price.course_id = courses.id
+  left join course_tags on course_tags.course_id = courses.id
+  left join tags on tags.id = course_tags.tag_id
 group by
   courses.id, category.name, sub_category.name, user_profile.username, price.amount, tags.name, topics.name;
 
@@ -201,17 +202,35 @@ create or replace function update_average_rating()
 returns trigger as 
 $$
 declare avg_ratingx decimal(10, 2);
+decimal review_countx bigint;
 begin
-    select AVG(rating) into avg_ratingx
+    select AVG(rating), COUNT(id) into avg_ratingx, review_countx
     from course_review
     where course_id = NEW.course_id;
     
     update courses
-    set avg_rating = avg_ratingx
+    set avg_rating = avg_ratingx, review_count = review_countx
     where id = NEW.course_id;
 
     return NEW;
 
+end;
+$$ language plpgsql;
+
+create or replace function update_enrollment_count()
+returns trigger as
+$$
+declare enroll_count bigint;
+begin
+  select COUNT(user_id) into enroll_count
+  from enrollment
+  where course_id = NEW.course_id;
+
+  update courses
+  set enrollment_count = enroll_count
+  where id = NEW.course_id;
+
+  return NEW;
 end;
 $$ language plpgsql;
 
@@ -247,10 +266,11 @@ create or replace function get_category_filters(
   categories text[],
   sub_categories text[],
   topics text[],
-  levels text[],
+  levels course_level_enum[],
   rating numeric,
-  languages text[],
-  price text[]
+  languages language_enum[],
+  price course_access_enum[],
+  sort text
 ) returns json as
 $$
 declare
@@ -295,7 +315,8 @@ begin
     'grouped', 
     (select json_agg(row_to_json(t))
       from (select
-        category, 
+        category,
+        COUNT(distinct id) as total_count,
         COUNT(distinct case when avg_rating >= 3 then id end) as rating_3_up, 
         COUNT(distinct case when avg_rating >= 3.5 then id end) as rating_3_half_up, 
         COUNT(distinct case when avg_rating >= 4 then id end) as rating_4_up, 
@@ -353,9 +374,224 @@ end;
 $$
 language plpgsql;
 
+create or replace function get_courses_list(
+  categories text[],
+  sub_categories text[],
+  topics text[],
+  levels course_level_enum[],
+  rating numeric,
+  languages language_enum[],
+  price course_access_enum[],
+  sort text,
+  page_size integer,
+  page_number integer
+) returns table (
+  id bigint,
+  image text,
+  title text,
+  short_description text,
+  enrollment_count bigint,
+  instructors text,
+  tags text,
+  is_paid course_access_enum,
+  avg_rating decimal(10,2),
+  review_count bigint,
+  level course_level_enum,
+  amount decimal(10,2)
+) as
+$$
+declare
+  response json;
+begin
+
+  if sort = 'mostpop' then
+    if topics is not null then
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      from
+        courses_md c
+      where
+          (categories is null or c.category in (SELECT unnest(categories)))
+          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
+          AND (levels is null or c.level in (select unnest(levels)))
+          AND (rating is null or c.avg_rating >= rating)
+          AND (languages is null or c.language in (select unnest(languages)))
+          AND (price is null or c.is_paid in (select unnest(price)))
+          AND (topics is null or c.topic in (select unnest(topics)))
+      group by
+        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
+      having
+        COUNT(distinct c.topic) = array_length(topics, 1)
+      order by
+        c.enrollment_count desc,
+        c.id
+      limit page_size
+      offset page_size * page_number;
+      
+    else 
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      from
+        courses_md c
+      where
+          (categories is null or c.category in (SELECT unnest(categories)))
+          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
+          AND (levels is null or c.level in (select unnest(levels)))
+          AND (rating is null or c.avg_rating >= rating)
+          AND (languages is null or c.language in (select unnest(languages)))
+          AND (price is null or c.is_paid in (select unnest(price)))
+      group by
+        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
+      order by
+        c.enrollment_count desc,
+        c.id
+      limit page_size
+      offset page_size * page_number;
+    end if;
+
+  elseif sort = 'new' then
+
+    if topics is not null then
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      from
+        courses_md c
+      where
+          (categories is null or c.category in (SELECT unnest(categories)))
+          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
+          AND (levels is null or c.level in (select unnest(levels)))
+          AND (rating is null or c.avg_rating >= rating)
+          AND (languages is null or c.language in (select unnest(languages)))
+          AND (price is null or c.is_paid in (select unnest(price)))
+          AND (topics is null or c.topic in (select unnest(topics)))
+      group by
+        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count, c.created_at
+      having
+        COUNT(distinct c.topic) = array_length(topics, 1)
+      order by
+        c.created_at desc,
+        c.id
+      limit page_size
+      offset page_size * page_number;
+      
+    else 
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      from
+        courses_md c
+      where
+          (categories is null or c.category in (SELECT unnest(categories)))
+          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
+          AND (levels is null or c.level in (select unnest(levels)))
+          AND (rating is null or c.avg_rating >= rating)
+          AND (languages is null or c.language in (select unnest(languages)))
+          AND (price is null or c.is_paid in (select unnest(price)))
+      group by
+        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count, c.created_at
+      order by
+        c.created_at desc,
+        c.id
+      limit page_size
+      offset page_size * page_number;
+    end if;
+
+  elseif sort = 'high' then
+
+    if topics is not null then
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      from
+        courses_md c
+      where
+          (categories is null or c.category in (SELECT unnest(categories)))
+          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
+          AND (levels is null or c.level in (select unnest(levels)))
+          AND (rating is null or c.avg_rating >= rating)
+          AND (languages is null or c.language in (select unnest(languages)))
+          AND (price is null or c.is_paid in (select unnest(price)))
+          AND (topics is null or c.topic in (select unnest(topics)))
+      group by
+        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
+      having
+        COUNT(distinct c.topic) = array_length(topics, 1)
+      order by
+        c.avg_rating desc,
+        c.id
+      limit page_size
+      offset page_size * page_number;
+      
+    else 
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      from
+        courses_md c
+      where
+          (categories is null or c.category in (SELECT unnest(categories)))
+          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
+          AND (levels is null or c.level in (select unnest(levels)))
+          AND (rating is null or c.avg_rating >= rating)
+          AND (languages is null or c.language in (select unnest(languages)))
+          AND (price is null or c.is_paid in (select unnest(price)))
+      group by
+        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
+      order by
+        c.avg_rating desc,
+        c.id
+      limit page_size
+      offset page_size * page_number;
+    end if;
+
+  else
+
+    if topics is not null then
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      from
+        courses_md c
+      where
+          (categories is null or c.category in (SELECT unnest(categories)))
+          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
+          AND (levels is null or c.level in (select unnest(levels)))
+          AND (rating is null or c.avg_rating >= rating)
+          AND (languages is null or c.language in (select unnest(languages)))
+          AND (price is null or c.is_paid in (select unnest(price)))
+          AND (topics is null or c.topic in (select unnest(topics)))
+      group by
+        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
+      having
+        COUNT(distinct c.topic) = array_length(topics, 1)
+      order by
+        c.id
+      limit page_size
+      offset page_size * page_number;
+      
+    else 
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      from
+        courses_md c
+      where
+          (categories is null or c.category in (SELECT unnest(categories)))
+          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
+          AND (levels is null or c.level in (select unnest(levels)))
+          AND (rating is null or c.avg_rating >= rating)
+          AND (languages is null or c.language in (select unnest(languages)))
+          AND (price is null or c.is_paid in (select unnest(price)))
+      group by
+        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
+      order by
+        c.id
+      limit page_size
+      offset page_size * page_number;
+    end if;
+
+  end if;
+
+  
+end;
+$$
+language plpgsql;
+
 -- triggers
 
 create trigger update_average_rating_trigger
 after insert on course_review
 for each row
 execute procedure update_average_rating();
+
+create trigger update_enrollment_count_trigger
+after insert on enrollment
+for each row
+execute procedure update_enrollment_count();
