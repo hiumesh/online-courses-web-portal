@@ -24,8 +24,12 @@ export interface FilterMenuPropeTypes {
       text: string;
     }[];
     topics: {
-      topic: string;
+      topic_name: string;
       topic_count: number;
+    }[];
+    languages: {
+      language_name: string;
+      language_count: string;
     }[];
     price: {
       value: string;
@@ -37,17 +41,18 @@ export interface FilterMenuPropeTypes {
       label: string;
       count: number;
     }[];
-    sub_category: {
+    sub_category?: {
       sub_category: string;
       sub_category_count: number;
     }[];
   };
   searchParams: {
+    q?: null | string;
     rating: null | number;
-    sub_categories: null | string[];
+    sub_categories?: null | string[];
     topics: null | string[];
     levels: null | string[];
-    languages: null;
+    languages: null | string[];
     price: null | string[];
   };
 }
@@ -69,6 +74,9 @@ export default function FilterMenu({
     const filters = form.getValues();
     console.log(filters);
     let qq = [];
+    if (searchParamsx.has("q")) {
+      qq.push(`q=${searchParamsx.get("q")}&`);
+    }
 
     if (filters.rating) qq.push(`rating=${filters.rating}&`);
 
@@ -98,7 +106,18 @@ export default function FilterMenu({
 
     if (filters.prices && filters.prices.length)
       qq.push(
-        (filters.prices as boolean[]).map((p) => `prices=${p}`).join("&")
+        (filters.prices as boolean[])
+          .map((p) => `prices=${p}`)
+          .join("&")
+          .concat("&")
+      );
+
+    if (filters.languages && filters.languages.length)
+      qq.push(
+        (filters.languages as boolean[])
+          .map((l) => `languages=${l}`)
+          .join("&")
+          .concat("&")
       );
 
     if (searchParamsx.has("sort")) {
@@ -118,7 +137,7 @@ export default function FilterMenu({
     if (searchParams.topics) {
       form.setValue("topics", searchParams.topics);
       ad.push("topics");
-    } else form.resetField("topics");
+    } else form.setValue("topics", []);
     if (searchParams.sub_categories) {
       ad.push("sub_category");
       form.setValue("sub_category", searchParams.sub_categories);
@@ -131,9 +150,13 @@ export default function FilterMenu({
       ad.push("price");
       form.setValue("prices", searchParams.price);
     } else form.resetField("prices");
+    if (searchParams.languages) {
+      ad.push("languages");
+      form.setValue("languages", searchParams.languages);
+    }
 
     setAccordionDefaultValue(ad);
-  }, [searchParams, form]);
+  }, [searchParams]);
 
   return (
     <Form {...form}>
@@ -200,77 +223,28 @@ export default function FilterMenu({
                 <FormItem className="space-y-3 py-4">
                   {filters.topics.map((t) => (
                     <FormField
-                      key={t.topic}
+                      key={t.topic_name}
                       control={form.control}
                       name="topics"
                       render={({ field }) => (
                         <FormItem
-                          key={t.topic}
+                          key={t.topic_name}
                           className="flex flex-row items-center space-x-3 space-y-0"
                         >
                           <FormControl>
                             <Checkbox
-                              checked={field.value?.includes(t.topic)}
-                              className="rounded-none border-2 box-content"
-                              onCheckedChange={(checked) => {
-                                checked
-                                  ? field.onChange([...field?.value, t.topic])
-                                  : field.onChange(
-                                      field.value?.filter(
-                                        (value: string) => value !== t.topic
-                                      )
-                                    );
-                                handleFormChange();
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {t.topic}({t.topic_count})
-                          </FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </FormItem>
-              )}
-            />
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="sub_category">
-          <AccordionTrigger className="text-xl font-medium">
-            Sub Category
-          </AccordionTrigger>
-          <AccordionContent>
-            <FormField
-              control={form.control}
-              name="sub_category"
-              defaultValue={[]}
-              render={({}) => (
-                <FormItem className="space-y-3 py-4">
-                  {filters.sub_category.map((sc) => (
-                    <FormField
-                      key={sc.sub_category}
-                      control={form.control}
-                      name="sub_category"
-                      render={({ field }) => (
-                        <FormItem
-                          key={sc.sub_category}
-                          className="flex flex-row items-center space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(sc.sub_category)}
+                              checked={field.value?.includes(t.topic_name)}
                               className="rounded-none border-2 box-content"
                               onCheckedChange={(checked) => {
                                 checked
                                   ? field.onChange([
                                       ...field?.value,
-                                      sc.sub_category,
+                                      t.topic_name,
                                     ])
                                   : field.onChange(
                                       field.value?.filter(
                                         (value: string) =>
-                                          value !== sc.sub_category
+                                          value !== t.topic_name
                                       )
                                     );
                                 handleFormChange();
@@ -278,7 +252,7 @@ export default function FilterMenu({
                             />
                           </FormControl>
                           <FormLabel className="font-normal">
-                            {sc.sub_category}({sc.sub_category_count})
+                            {t.topic_name}({t.topic_count})
                           </FormLabel>
                         </FormItem>
                       )}
@@ -289,6 +263,62 @@ export default function FilterMenu({
             />
           </AccordionContent>
         </AccordionItem>
+        {filters.sub_category && (
+          <AccordionItem value="sub_category">
+            <AccordionTrigger className="text-xl font-medium">
+              Sub Category
+            </AccordionTrigger>
+            <AccordionContent>
+              <FormField
+                control={form.control}
+                name="sub_category"
+                defaultValue={[]}
+                render={({}) => (
+                  <FormItem className="space-y-3 py-4">
+                    {filters?.sub_category?.map((sc) => (
+                      <FormField
+                        key={sc.sub_category}
+                        control={form.control}
+                        name="sub_category"
+                        render={({ field }) => (
+                          <FormItem
+                            key={sc.sub_category}
+                            className="flex flex-row items-center space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(sc.sub_category)}
+                                className="rounded-none border-2 box-content"
+                                onCheckedChange={(checked) => {
+                                  checked
+                                    ? field.onChange([
+                                        ...field?.value,
+                                        sc.sub_category,
+                                      ])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value: string) =>
+                                            value !== sc.sub_category
+                                        )
+                                      );
+                                  handleFormChange();
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {sc.sub_category}({sc.sub_category_count})
+                            </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </FormItem>
+                )}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
         <AccordionItem value="level">
           <AccordionTrigger className="text-xl font-medium">
             Level
@@ -377,6 +407,59 @@ export default function FilterMenu({
                           </FormControl>
                           <FormLabel className="font-normal">
                             {p.label}({p.count})
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </FormItem>
+              )}
+            />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="languages">
+          <AccordionTrigger className="text-xl font-medium">
+            Language
+          </AccordionTrigger>
+          <AccordionContent>
+            <FormField
+              control={form.control}
+              name="languages"
+              defaultValue={[]}
+              render={({}) => (
+                <FormItem className="space-y-3 py-4">
+                  {filters.languages.map((l) => (
+                    <FormField
+                      key={l.language_name}
+                      control={form.control}
+                      name="languages"
+                      render={({ field }) => (
+                        <FormItem
+                          key={l.language_name}
+                          className="flex flex-row items-center space-x-3 space-y-0"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(l.language_name)}
+                              className="rounded-none border-2 box-content"
+                              onCheckedChange={(checked) => {
+                                checked
+                                  ? field.onChange([
+                                      ...field?.value,
+                                      l.language_name,
+                                    ])
+                                  : field.onChange(
+                                      field.value?.filter(
+                                        (value: string) =>
+                                          value !== l.language_name
+                                      )
+                                    );
+                                handleFormChange();
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            {l.language_name}({l.language_count})
                           </FormLabel>
                         </FormItem>
                       )}

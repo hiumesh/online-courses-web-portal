@@ -6,14 +6,16 @@ import RatingStar from "@/components/rating-star";
 import CategoryTags from "@/components/category-tag";
 
 interface CoursesListPropeTypes {
-  category: string;
   searchParams: {
+    q: string;
+    categories?: null;
+    sub_categories?: null;
     rating: null | number;
-    sub_categories?: null | string[];
     topics: null | string[];
     levels: null | string[];
-    languages: null;
+    languages: null | string[];
     price: null | string[];
+    p: null | number;
   };
 }
 
@@ -22,8 +24,8 @@ interface CourseType {
   image: string;
   title: string;
   short_description: string;
-  instructors: string;
-  tags: string;
+  instructors: string[];
+  tags: string[];
   is_paid: string;
   enrollment_count: number;
   avg_rating: number;
@@ -33,15 +35,12 @@ interface CourseType {
 }
 
 export default async function CoursesList({
-  category,
   searchParams,
 }: CoursesListPropeTypes) {
   const supabase = createServerComponentClient({ cookies });
   const dbFilter = {
-    categories: [decodeURIComponent(category)],
     ...searchParams,
     page_size: 20,
-    page_number: 0,
   };
 
   const { data, error } = await supabase.rpc("get_courses_list", dbFilter);
@@ -74,7 +73,7 @@ function CourseCard({
   amount,
 }: CourseType) {
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 pb-4 border-b">
       <div>
         <Image src={image} width={350} height={200} alt="image" />
       </div>
@@ -82,7 +81,7 @@ function CourseCard({
         <h1 className="text-lg font-medium">{title}</h1>
         <p className="text-sm">{short_description}</p>
         <div>
-          {instructors.split(", ").map((i) => (
+          {instructors.map((i) => (
             <Link href="#" key={i} className="text-xs text-slate-500">
               {i}&nbsp;
             </Link>
@@ -96,7 +95,7 @@ function CourseCard({
           {enrollment_count})
         </p>
         <div className="relative -left-2 mt-2">
-          {tags?.split(", ").map((t) => (
+          {tags.map((t) => (
             <CategoryTags key={t}>{t}</CategoryTags>
           ))}
         </div>

@@ -169,32 +169,39 @@ create table
     constraint course_review_user_id_and_course_id_composite_key unique (user_id, course_id)
   ) tablespace pg_default;
 
+
+-- indexs
+
+create index idx_search_courses on courses using gin(to_tsvector('english', title || ' ' || short_description));
+
 -- views
 
 create or replace view courses_sm as
-select courses.id, category.name as category, sub_category.name as sub_category, courses.avg_rating, courses.language, courses.is_paid, courses.level, topics.name as topic
+select courses.id, courses.title, courses.short_description, category.name as category, sub_category.name as sub_category, courses.avg_rating, courses.language, courses.is_paid, courses.level, json_agg(topics.name) as topic
 from
   courses
   join category on category.id = courses.category
   join sub_category on sub_category.id = courses.sub_category
   join course_topics on course_topics.course_id = courses.id
-  join topics on topics.id = course_topics.topic_id;
+  join topics on topics.id = course_topics.topic_id
+group by
+  courses.id, category.name, sub_category.name;
 
 create or replace view courses_md as
-select courses.id, courses.image, courses.title, courses.short_description, courses.enrollment_count, courses.created_at, category.name as category, sub_category.name as sub_category, user_profile.username as instructor, courses.avg_rating, courses.is_paid, courses.level, price.amount as amount, tags.name as tag, topics.name as topic, courses.language, courses.review_count
+select courses.id, courses.image, courses.title, courses.short_description, courses.enrollment_count, courses.created_at, category.name as category, sub_category.name as sub_category, courses.avg_rating, courses.is_paid, courses.level, price.amount as amount,  courses.language, courses.review_count, json_agg(distinct tags.name) as tag, json_agg(distinct topics.name) as topic, json_agg(distinct user_profile.username) as instructor
 from
   courses
   join category on category.id = courses.category
   join sub_category on sub_category.id = courses.sub_category
+  left join price on price.course_id = courses.id
+  left join course_tags on course_tags.course_id = courses.id
+  left join tags on tags.id = course_tags.tag_id
   join course_instructor on course_instructor.course_id = courses.id
   join user_profile on course_instructor.user_id = user_profile.user_id
   join course_topics on course_topics.course_id = courses.id
   join topics on topics.id = course_topics.topic_id
-  left join price on price.course_id = courses.id
-  left join course_tags on course_tags.course_id = courses.id
-  left join tags on tags.id = course_tags.tag_id
 group by
-  courses.id, category.name, sub_category.name, user_profile.username, price.amount, tags.name, topics.name;
+  courses.id, category.id, sub_category.id, price.id;
 
 -- function
 
@@ -261,6 +268,140 @@ begin
   insert into public.user_profile (user_id, username, avatar, first_name, last_name, account_type) VALUES (user_id, username, avatar, first_name, last_name, account_type);
 end;
 $$ language plpgsql;
+
+create or replace function get_text_search_filters(
+  q text,
+  topics text[],
+  levels course_level_enum[],
+  rating numeric,
+  languages language_enum[],
+  price course_access_enum[]
+) returns json as
+$$
+declare
+  response json;
+begin
+  select json_build_object (
+    'total', 
+    (
+      select row_to_json(t)
+      from (
+        select
+          COUNT(distinct id) as total_count
+        from 
+          courses_sm sm
+        where
+          to_tsvector('english', title || ' ' || short_description) @@ to_tsquery('english', q)
+          AND (levels is null or level in (select unnest(levels)))
+          AND (rating is null or avg_rating >= rating)
+          AND (languages is null or language in (select unnest(languages)))
+          AND (price is null or is_paid in (select unnest(price)))
+          AND (topics is null or topic::jsonb ?& topics)
+        
+      ) t
+    ),
+    'ratings',
+    (
+      select row_to_json(t)
+      from (select
+        COUNT(distinct case when avg_rating >= 3 then id end) as rating_3_up, 
+        COUNT(distinct case when avg_rating >= 3.5 then id end) as rating_3_half_up, 
+        COUNT(distinct case when avg_rating >= 4 then id end) as rating_4_up, 
+        COUNT(distinct case when avg_rating >= 4.5 then id end) as rating_4_half_up
+      from 
+        courses_sm sm
+      where
+        to_tsvector('english', title || ' ' || short_description) @@ to_tsquery('english', q)
+        AND (levels is null or level in (select unnest(levels)))
+        AND (languages is null or language in (select unnest(languages)))
+        AND (price is null or is_paid in (select unnest(price)))
+        AND (topics is null or topic::jsonb ?& topics)
+      ) t
+    ),
+    'paid',
+    (
+      select row_to_json(t)
+      from (select
+        COUNT(distinct case when is_paid = 'PAID' then id end) as paid, 
+        COUNT(distinct case when is_paid = 'FREE' then id end) as free
+      from 
+        courses_sm sm
+      where
+        to_tsvector('english', title || ' ' || short_description) @@ to_tsquery('english', q)
+        AND (levels is null or level in (select unnest(levels)))
+        AND (rating is null or avg_rating >= rating)
+        AND (languages is null or language in (select unnest(languages)))
+        AND (topics is null or topic::jsonb ?& topics)
+      ) t
+    ),
+    'level',
+    (
+      select row_to_json(t)
+      from (select
+        COUNT(distinct case when level = 'ALL_LEVELS' then id end) as all_levels, 
+        COUNT(distinct case when level = 'BEGINNER' then id end) as beginner, 
+        COUNT(distinct case when level = 'INTERMEDIATE' then id end) as intermediate, 
+        COUNT(distinct case when level = 'EXPERT' then id end) as expert
+      from 
+        courses_sm sm
+      where
+        to_tsvector('english', title || ' ' || short_description) @@ to_tsquery('english', q)
+        AND (rating is null or avg_rating >= rating)
+        AND (languages is null or language in (select unnest(languages)))
+        AND (price is null or is_paid in (select unnest(price)))
+        AND (topics is null or topic::jsonb ?& topics)
+      ) t
+    ),
+    'topics',
+    (
+      select json_agg(row_to_json(t))
+      from (
+        select
+          json_array_elements_text(topic) as topic_name,
+          count(distinct id) as topic_count
+        from 
+          courses_sm sm
+        where
+          to_tsvector('english', title || ' ' || short_description) @@ to_tsquery('english', q)
+          AND (levels is null or level in (select unnest(levels)))
+          AND (rating is null or avg_rating >= rating)
+          AND (languages is null or language in (select unnest(languages)))
+          AND (price is null or is_paid in (select unnest(price)))
+          AND (topics is null or topic::jsonb ?& topics)
+        group by
+          topic_name
+        order by topic_count desc
+        limit 20
+      ) t
+    ),
+    'languages',
+    (
+      select json_agg(row_to_json(t))
+      from (
+        select
+          language as language_name,
+          count(distinct id) as language_count
+        from 
+          courses_sm sm
+        where
+          to_tsvector('english', title || ' ' || short_description) @@ to_tsquery('english', q)
+          AND (levels is null or level in (select unnest(levels)))
+          AND (rating is null or avg_rating >= rating)
+          AND (price is null or is_paid in (select unnest(price)))
+          AND (topics is null or topic::jsonb ?& topics)
+        group by
+          language
+        order by language_count desc
+        limit 20
+      ) t
+    ) 
+    
+  ) into response;
+
+  return response;
+end;
+$$
+language plpgsql;
 
 create or replace function get_category_filters(
   categories text[],
@@ -375,6 +516,7 @@ $$
 language plpgsql;
 
 create or replace function get_courses_list(
+  q text,
   categories text[],
   sub_categories text[],
   topics text[],
@@ -384,15 +526,15 @@ create or replace function get_courses_list(
   price course_access_enum[],
   sort text,
   page_size integer,
-  page_number integer
+  p integer
 ) returns table (
   id bigint,
   image text,
   title text,
   short_description text,
   enrollment_count bigint,
-  instructors text,
-  tags text,
+  instructors json,
+  tags json,
   is_paid course_access_enum,
   avg_rating decimal(10,2),
   review_count bigint,
@@ -405,181 +547,77 @@ declare
 begin
 
   if sort = 'mostpop' then
-    if topics is not null then
-      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, c.instructor as instructors, c.tag as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
       from
         courses_md c
       where
-          (categories is null or c.category in (SELECT unnest(categories)))
+          (q is null or to_tsvector('english', c.title || ' ' || c.short_description) @@ to_tsquery('english', q))
+          AND (categories is null or c.category in (SELECT unnest(categories)))
           AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
           AND (levels is null or c.level in (select unnest(levels)))
           AND (rating is null or c.avg_rating >= rating)
           AND (languages is null or c.language in (select unnest(languages)))
           AND (price is null or c.is_paid in (select unnest(price)))
-          AND (topics is null or c.topic in (select unnest(topics)))
-      group by
-        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
-      having
-        COUNT(distinct c.topic) = array_length(topics, 1)
+          AND (topics is null or topic::jsonb ?& topics)
       order by
         c.enrollment_count desc,
         c.id
       limit page_size
-      offset page_size * page_number;
-      
-    else 
-      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
-      from
-        courses_md c
-      where
-          (categories is null or c.category in (SELECT unnest(categories)))
-          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
-          AND (levels is null or c.level in (select unnest(levels)))
-          AND (rating is null or c.avg_rating >= rating)
-          AND (languages is null or c.language in (select unnest(languages)))
-          AND (price is null or c.is_paid in (select unnest(price)))
-      group by
-        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
-      order by
-        c.enrollment_count desc,
-        c.id
-      limit page_size
-      offset page_size * page_number;
-    end if;
-
+      offset page_size * p;
   elseif sort = 'new' then
-
-    if topics is not null then
-      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, c.instructor as instructors, c.tag as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
       from
         courses_md c
       where
-          (categories is null or c.category in (SELECT unnest(categories)))
+          (q is null or to_tsvector('english', c.title || ' ' || c.short_description) @@ to_tsquery('english', q))
+          AND (categories is null or c.category in (SELECT unnest(categories)))
           AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
           AND (levels is null or c.level in (select unnest(levels)))
           AND (rating is null or c.avg_rating >= rating)
           AND (languages is null or c.language in (select unnest(languages)))
           AND (price is null or c.is_paid in (select unnest(price)))
-          AND (topics is null or c.topic in (select unnest(topics)))
-      group by
-        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count, c.created_at
-      having
-        COUNT(distinct c.topic) = array_length(topics, 1)
+          AND (topics is null or topic::jsonb ?& topics)
       order by
         c.created_at desc,
         c.id
       limit page_size
-      offset page_size * page_number;
-      
-    else 
-      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
-      from
-        courses_md c
-      where
-          (categories is null or c.category in (SELECT unnest(categories)))
-          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
-          AND (levels is null or c.level in (select unnest(levels)))
-          AND (rating is null or c.avg_rating >= rating)
-          AND (languages is null or c.language in (select unnest(languages)))
-          AND (price is null or c.is_paid in (select unnest(price)))
-      group by
-        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count, c.created_at
-      order by
-        c.created_at desc,
-        c.id
-      limit page_size
-      offset page_size * page_number;
-    end if;
-
+      offset page_size * p;
   elseif sort = 'high' then
-
-    if topics is not null then
-      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, c.instructor as instructors, c.tag as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
       from
         courses_md c
       where
-          (categories is null or c.category in (SELECT unnest(categories)))
+          (q is null or to_tsvector('english', c.title || ' ' || c.short_description) @@ to_tsquery('english', q))
+          AND (categories is null or c.category in (SELECT unnest(categories)))
           AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
           AND (levels is null or c.level in (select unnest(levels)))
           AND (rating is null or c.avg_rating >= rating)
           AND (languages is null or c.language in (select unnest(languages)))
           AND (price is null or c.is_paid in (select unnest(price)))
-          AND (topics is null or c.topic in (select unnest(topics)))
-      group by
-        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
-      having
-        COUNT(distinct c.topic) = array_length(topics, 1)
+          AND (topics is null or topic::jsonb ?& topics)
       order by
         c.avg_rating desc,
         c.id
       limit page_size
-      offset page_size * page_number;
-      
-    else 
-      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
-      from
-        courses_md c
-      where
-          (categories is null or c.category in (SELECT unnest(categories)))
-          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
-          AND (levels is null or c.level in (select unnest(levels)))
-          AND (rating is null or c.avg_rating >= rating)
-          AND (languages is null or c.language in (select unnest(languages)))
-          AND (price is null or c.is_paid in (select unnest(price)))
-      group by
-        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
-      order by
-        c.avg_rating desc,
-        c.id
-      limit page_size
-      offset page_size * page_number;
-    end if;
-
+      offset page_size * p;
   else
-
-    if topics is not null then
-      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
+     return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, c.instructor as instructors, c.tag as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
       from
         courses_md c
       where
-          (categories is null or c.category in (SELECT unnest(categories)))
+          (q is null or to_tsvector('english', c.title || ' ' || c.short_description) @@ to_tsquery('english', q))
+          AND (categories is null or c.category in (SELECT unnest(categories)))
           AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
           AND (levels is null or c.level in (select unnest(levels)))
           AND (rating is null or c.avg_rating >= rating)
           AND (languages is null or c.language in (select unnest(languages)))
           AND (price is null or c.is_paid in (select unnest(price)))
-          AND (topics is null or c.topic in (select unnest(topics)))
-      group by
-        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
-      having
-        COUNT(distinct c.topic) = array_length(topics, 1)
+          AND (topics is null or topic::jsonb ?& topics)
       order by
         c.id
       limit page_size
-      offset page_size * page_number;
-      
-    else 
-      return query select c.id, c.image, c.title, c.short_description, c.enrollment_count, string_agg(distinct c.instructor, ', ') as instructors, string_agg(distinct c.tag, ', ') as tags, c.is_paid, c.avg_rating, c.review_count, c.level, c.amount
-      from
-        courses_md c
-      where
-          (categories is null or c.category in (SELECT unnest(categories)))
-          AND (sub_categories is null or c.sub_category in (select unnest(sub_categories)))
-          AND (levels is null or c.level in (select unnest(levels)))
-          AND (rating is null or c.avg_rating >= rating)
-          AND (languages is null or c.language in (select unnest(languages)))
-          AND (price is null or c.is_paid in (select unnest(price)))
-      group by
-        c.id, c.image, c.title, c.short_description, c.enrollment_count, c.is_paid, c.avg_rating, c.level, c.amount, c.review_count
-      order by
-        c.id
-      limit page_size
-      offset page_size * page_number;
-    end if;
-
-  end if;
-
-  
+      offset page_size * p;
+  end if;  
 end;
 $$
 language plpgsql;

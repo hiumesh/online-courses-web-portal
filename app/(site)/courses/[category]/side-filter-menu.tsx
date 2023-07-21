@@ -9,7 +9,7 @@ interface SideFilterMenuPropeTypes {
   category: string;
   searchParams: {
     rating: null | number;
-    sub_categories: null | string[];
+    sub_categories?: null | string[];
     topics: null | string[];
     levels: null | string[];
     languages: null;
@@ -173,7 +173,7 @@ export default async function SideFilterMenu({
     <div>
       <div>
         <div className="flex justify-between items-stretch h-14">
-          <SortFilter searchParams={searchParams} />
+          <SortFilter sort={searchParams.sort} />
           <span className="text-lg font-bold text-gray-400 flex items-center">
             {filtersMetaData.total_count} results
           </span>
