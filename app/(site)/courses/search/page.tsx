@@ -1,9 +1,9 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
-import SideFilterMenu from "./side-filter-menu";
+import SideFilterMenu from "../../../../components/side-filter-menu";
 import { defaultFiltersForSearchPage } from "@/lib/defaults";
-import CoursesList from "./courses_list";
+import CoursesList from "../../../../components/courses_list";
 import CoursePagination from "@/components/pagination";
 
 interface SearchPagePropeTypes {
@@ -33,9 +33,9 @@ const processSearchQuery = (searchParams: {
   p: null | number;
 }) => {
   const filters: {
-    q: string;
-    categories?: null;
-    sub_categories?: null;
+    q: string | null;
+    categories: null | string[];
+    sub_categories: null | string[];
     topics: null | string[];
     rating: null | number;
     levels: null | string[];
@@ -192,6 +192,7 @@ export default async function SearchPage({
       <SideFilterMenu
         filtersMetaData={filtersMetaData}
         searchParams={processedSearchParams}
+        hideFilters={["sub_category"]}
       >
         <>
           <CoursesList searchParams={processedSearchParams} />

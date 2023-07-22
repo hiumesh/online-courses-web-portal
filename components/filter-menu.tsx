@@ -42,7 +42,7 @@ export interface FilterMenuPropeTypes {
       count: number;
     }[];
     sub_category?: {
-      sub_category: string;
+      sub_category_name: string;
       sub_category_count: number;
     }[];
   };
@@ -55,11 +55,13 @@ export interface FilterMenuPropeTypes {
     languages: null | string[];
     price: null | string[];
   };
+  hideFilters: string[];
 }
 
 export default function FilterMenu({
   filtersMetaData: filters,
   searchParams,
+  hideFilters,
 }: FilterMenuPropeTypes) {
   const form = useForm();
   const router = useRouter();
@@ -141,7 +143,7 @@ export default function FilterMenu({
     if (searchParams.sub_categories) {
       ad.push("sub_category");
       form.setValue("sub_category", searchParams.sub_categories);
-    } else form.resetField("sub_category");
+    } else form.setValue("sub_category", []);
     if (searchParams.levels) {
       ad.push("level");
       form.setValue("levels", searchParams.levels);
@@ -210,7 +212,7 @@ export default function FilterMenu({
             />
           </AccordionContent>
         </AccordionItem>
-        <AccordionItem value="topics">
+        <AccordionItem value="topics" hidden={hideFilters.includes("topics")}>
           <AccordionTrigger className="text-xl font-medium">
             Topics
           </AccordionTrigger>
@@ -263,61 +265,65 @@ export default function FilterMenu({
             />
           </AccordionContent>
         </AccordionItem>
-        {filters.sub_category && (
-          <AccordionItem value="sub_category">
-            <AccordionTrigger className="text-xl font-medium">
-              Sub Category
-            </AccordionTrigger>
-            <AccordionContent>
-              <FormField
-                control={form.control}
-                name="sub_category"
-                defaultValue={[]}
-                render={({}) => (
-                  <FormItem className="space-y-3 py-4">
-                    {filters?.sub_category?.map((sc) => (
-                      <FormField
-                        key={sc.sub_category}
-                        control={form.control}
-                        name="sub_category"
-                        render={({ field }) => (
-                          <FormItem
-                            key={sc.sub_category}
-                            className="flex flex-row items-center space-x-3 space-y-0"
-                          >
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(sc.sub_category)}
-                                className="rounded-none border-2 box-content"
-                                onCheckedChange={(checked) => {
-                                  checked
-                                    ? field.onChange([
-                                        ...field?.value,
-                                        sc.sub_category,
-                                      ])
-                                    : field.onChange(
-                                        field.value?.filter(
-                                          (value: string) =>
-                                            value !== sc.sub_category
-                                        )
-                                      );
-                                  handleFormChange();
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              {sc.sub_category}({sc.sub_category_count})
-                            </FormLabel>
-                          </FormItem>
-                        )}
-                      />
-                    ))}
-                  </FormItem>
-                )}
-              />
-            </AccordionContent>
-          </AccordionItem>
-        )}
+
+        <AccordionItem
+          value="sub_category"
+          hidden={hideFilters.includes("sub_category")}
+        >
+          <AccordionTrigger className="text-xl font-medium">
+            Sub Category
+          </AccordionTrigger>
+          <AccordionContent>
+            <FormField
+              control={form.control}
+              name="sub_category"
+              defaultValue={[]}
+              render={({}) => (
+                <FormItem className="space-y-3 py-4">
+                  {filters?.sub_category?.map((sc) => (
+                    <FormField
+                      key={sc.sub_category_name}
+                      control={form.control}
+                      name="sub_category"
+                      render={({ field }) => (
+                        <FormItem
+                          key={sc.sub_category_name}
+                          className="flex flex-row items-center space-x-3 space-y-0"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(
+                                sc.sub_category_name
+                              )}
+                              className="rounded-none border-2 box-content"
+                              onCheckedChange={(checked) => {
+                                checked
+                                  ? field.onChange([
+                                      ...field?.value,
+                                      sc.sub_category_name,
+                                    ])
+                                  : field.onChange(
+                                      field.value?.filter(
+                                        (value: string) =>
+                                          value !== sc.sub_category_name
+                                      )
+                                    );
+                                handleFormChange();
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            {sc.sub_category_name}({sc.sub_category_count})
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </FormItem>
+              )}
+            />
+          </AccordionContent>
+        </AccordionItem>
 
         <AccordionItem value="level">
           <AccordionTrigger className="text-xl font-medium">

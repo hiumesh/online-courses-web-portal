@@ -161,7 +161,7 @@ export default function CoursePagination({
 
       <button
         className="flex items-center justify-center w-10 h-10 border rounded-full border-slate-800"
-        onClick={() => paginationChangeHandler(currentPage - 1)}
+        onClick={() => paginationChangeHandler(currentPage + 1)}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

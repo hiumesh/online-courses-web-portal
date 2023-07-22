@@ -34,6 +34,12 @@ export const defaultFiltersForSearchPage = {
       language_count: 4,
     },
   ],
+  sub_category: [
+    {
+      sub_category_name: "xx",
+      sub_category_count: 4,
+    },
+  ],
   price: [
     {
       value: "PAID",

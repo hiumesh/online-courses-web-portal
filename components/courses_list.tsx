@@ -7,14 +7,15 @@ import CategoryTags from "@/components/category-tag";
 
 interface CoursesListPropeTypes {
   searchParams: {
-    q: string;
-    categories?: null;
-    sub_categories?: null;
-    rating: null | number;
+    q: string | null;
+    categories: null | string[];
+    sub_categories: null | string[];
     topics: null | string[];
+    rating: null | number;
     levels: null | string[];
     languages: null | string[];
     price: null | string[];
+    sort: null | string;
     p: null | number;
   };
 }
@@ -73,7 +74,7 @@ function CourseCard({
   amount,
 }: CourseType) {
   return (
-    <div className="flex gap-2 pb-4 border-b">
+    <div className="flex gap-2 pb-4 border-b last:border-none">
       <div>
         <Image src={image} width={350} height={200} alt="image" />
       </div>

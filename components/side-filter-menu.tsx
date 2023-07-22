@@ -6,24 +6,27 @@ import { ReactNode, useState } from "react";
 
 interface SideFilterMenuPropeTypes {
   searchParams: {
-    q: string;
-    categories?: null;
-    sub_categories?: null;
-    rating: null | number;
+    q: string | null;
+    categories: null | string[];
+    sub_categories: null | string[];
     topics: null | string[];
+    rating: null | number;
     levels: null | string[];
     languages: null | string[];
     price: null | string[];
-    sort: string | null;
+    sort: null | string;
+    p: null | number;
   };
   children: ReactNode;
   filtersMetaData: any;
+  hideFilters: string[];
 }
 
 export default function SideFilterMenu({
   children,
   filtersMetaData,
   searchParams,
+  hideFilters,
 }: SideFilterMenuPropeTypes) {
   const [filterMenuVisible, setFilterMenuVisible] = useState(true);
   const toggleFilterMenuHandler = () => {
@@ -52,6 +55,7 @@ export default function SideFilterMenu({
             <FilterMenu
               filtersMetaData={filtersMetaData}
               searchParams={searchParams}
+              hideFilters={hideFilters}
             />
           </div>
         </div>
