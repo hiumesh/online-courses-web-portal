@@ -28,8 +28,6 @@ export default function CoursePagination({
     router.replace(pathname + `?${qq.join("&")}&p=${value - 1}`);
   };
 
-  console.log(currentPage);
-
   return (
     <div className="flex items-center gap-3 mt-7">
       <button

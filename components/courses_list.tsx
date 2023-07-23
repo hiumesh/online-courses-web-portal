@@ -38,12 +38,14 @@ interface CourseType {
 export default async function CoursesList({
   searchParams,
 }: CoursesListPropeTypes) {
+  console.log(searchParams);
   const supabase = createServerComponentClient({ cookies });
   const dbFilter = {
     ...searchParams,
     page_size: 20,
   };
 
+  //console.log(dbFilter);
   const { data, error } = await supabase.rpc("get_courses_list", dbFilter);
   console.log(error?.message);
   if (error) {

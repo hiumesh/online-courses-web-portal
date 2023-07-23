@@ -1,13 +1,14 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import SideFilterMenu from "../../../../components/side-filter-menu";
+import SideFilterMenu from "@/components/side-filter-menu";
 import CoursePagination from "@/components/pagination";
-import CoursesList from "../../../../components/courses_list";
+import CoursesList from "@/components/courses_list";
 import { cookies } from "next/headers";
 import { defaultFiltersForSearchPage } from "@/lib/defaults";
 
 interface CategoryPropeTypes {
   params: {
     category: string;
+    subcategory: string;
   };
   searchParams: {
     rating?: string;
@@ -104,10 +105,23 @@ export default async function Category({
     processedSearchParams.categories = [decodeURIComponent(params.category)];
   }
 
+  if (params.subcategory) {
+    processedSearchParams.sub_categories = processedSearchParams.sub_categories
+      ? [
+          decodeURIComponent(params.subcategory),
+          ...processedSearchParams.sub_categories,
+        ]
+      : [decodeURIComponent(params.subcategory)];
+  }
 
   const dbFilter = {
     categories: [decodeURIComponent(params.category)],
-    sub_categories: processedSearchParams.sub_categories,
+    sub_categories: processedSearchParams.sub_categories
+      ? [
+          decodeURIComponent(params.subcategory),
+          ...processedSearchParams.sub_categories,
+        ]
+      : [decodeURIComponent(params.subcategory)],
     topics: processedSearchParams.topics,
     rating: processedSearchParams.rating,
     levels: processedSearchParams.levels,

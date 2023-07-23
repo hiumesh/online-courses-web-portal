@@ -52,8 +52,11 @@ export default function CategoriesMenu({
   }, []);
 
   return (
-    <div className="flex shadow-trello bg-white rounded w-max">
-      <ul className="p-3">
+    <div
+      className="flex shadow-trello bg-white rounded w-max"
+      style={{ zIndex: 2000 }}
+    >
+      <ul className="p-3 bg-white">
         {categories?.map((c) => (
           <Link
             className={`flex items-center justify-between my-2 gap-20 hover:text-primary-blue hover:cursor-pointer text-sm ${
@@ -86,15 +89,16 @@ export default function CategoriesMenu({
       </ul>
       {mainCategory?.sub_category.length ? (
         <ul className="border-l p-3">
-          {mainCategory?.sub_category?.map((c) => (
-            <li
+          {mainCategory?.sub_category?.map((sc) => (
+            <Link
               className={`flex items-center justify-between my-2 gap-14 hover:text-primary-blue hover:cursor-pointer text-sm ${
-                c.name == subCategory?.name && "text-primary-blue"
+                sc.name == subCategory?.name && "text-primary-blue"
               }`}
-              key={c?.name}
-              onMouseOver={() => subCategoryChangeHandler(c)}
+              key={sc?.name}
+              href={`/courses/${mainCategory.name}/${sc.name}`}
+              onMouseOver={() => subCategoryChangeHandler(sc.name)}
             >
-              {c.name}
+              {sc.name}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="15"
@@ -110,7 +114,7 @@ export default function CategoriesMenu({
                   d="m9 5l6 7l-6 7"
                 />
               </svg>
-            </li>
+            </Link>
           ))}
         </ul>
       ) : null}
