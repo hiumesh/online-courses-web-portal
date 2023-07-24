@@ -11,7 +11,7 @@ export interface SubCategory {
 
 export interface Topics {
   id: any;
-  name: any;
+  topic: any;
 }
 
 export interface Category {
@@ -29,7 +29,7 @@ export default function CategoriesMenu({
 }: CategoriesMenuPropeTypes) {
   const supabase = createClientComponentClient();
   const [mainCategory, setMainCategory] = useState<Category | null>(null);
-  const [subCategory, setSubCategory] = useState<SubCategory | null>(null);
+  const [subCategory, setSubCategory] = useState<string | null>(null);
   const [topics, setTopics] = useState<{
     loading: boolean;
     data: Topics[] | null;
@@ -40,26 +40,24 @@ export default function CategoriesMenu({
     setSubCategory(null);
   }, []);
 
-  const subCategoryChangeHandler = useCallback(async (sc: SubCategory) => {
+  const subCategoryChangeHandler = useCallback(async (sc: string) => {
     setSubCategory(sc);
-    setTopics({ ...topics, loading: true });
+    setTopics({ data: [], loading: true });
     const { data: xtopics, error } = await supabase
-      .from("topics")
+      .from("sub_category_topics")
       .select("*")
-      .eq("sub_category", sc.id)
-      .limit(8);
-    setTopics({ loading: false, data: xtopics });
+      .eq("name", sc)
+      .order("course_count")
+      .limit(10);
+    setTopics({ loading: false, data: xtopics as unknown as Topics[] });
   }, []);
 
   return (
-    <div
-      className="flex shadow-trello bg-white rounded w-max"
-      style={{ zIndex: 2000 }}
-    >
+    <div className="flex shadow-trello bg-white rounded w-max">
       <ul className="p-3 bg-white">
         {categories?.map((c) => (
           <Link
-            className={`flex items-center justify-between my-2 gap-20 hover:text-primary-blue hover:cursor-pointer text-sm ${
+            className={`flex items-center justify-between py-1.5 gap-20 hover:text-primary-blue hover:cursor-pointer text-sm ${
               c.name == mainCategory?.name && "text-primary-blue"
             }`}
             key={c?.name}
@@ -91,8 +89,8 @@ export default function CategoriesMenu({
         <ul className="border-l p-3">
           {mainCategory?.sub_category?.map((sc) => (
             <Link
-              className={`flex items-center justify-between my-2 gap-14 hover:text-primary-blue hover:cursor-pointer text-sm ${
-                sc.name == subCategory?.name && "text-primary-blue"
+              className={`flex items-center justify-between py-1.5 gap-14 hover:text-primary-blue hover:cursor-pointer text-sm ${
+                sc.name == subCategory && "text-primary-blue"
               }`}
               key={sc?.name}
               href={`/courses/${mainCategory.name}/${sc.name}`}
@@ -118,19 +116,33 @@ export default function CategoriesMenu({
           ))}
         </ul>
       ) : null}
-      {topics.data?.length ? (
+      {subCategory && (
         <ul className="border-l p-3">
           <h2 className="text-base font-medium mb-3">Popular Topics</h2>
-          {topics.data?.map((c) => (
-            <li
-              className="flex items-center justify-between my-2 gap-14 hover:text-primary-blue hover:cursor-pointer text-sm "
-              key={c?.name}
-            >
-              {c.name}
-            </li>
-          ))}
+          {topics.loading ? (
+            <div>
+              <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 mb-4"></div>
+            </div>
+          ) : (
+            topics.data?.map((c) => (
+              <Link
+                href={`/courses/topic/${c?.topic}`}
+                className="flex items-center justify-between py-1.5 gap-14 hover:text-primary-blue hover:cursor-pointer text-sm "
+                key={c?.topic}
+              >
+                {c.topic}
+              </Link>
+            ))
+          )}
         </ul>
-      ) : null}
+      )}
     </div>
   );
 }

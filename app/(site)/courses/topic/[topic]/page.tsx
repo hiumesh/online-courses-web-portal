@@ -7,8 +7,7 @@ import { defaultFiltersForSearchPage } from "@/lib/defaults";
 
 interface CategoryPropeTypes {
   params: {
-    category: string;
-    subcategory: string;
+    topic: string;
   };
   searchParams: {
     rating?: string;
@@ -101,28 +100,18 @@ export default async function Category({
   const processedSearchParams = processSearchQuery(searchParams);
   const supabase = createServerComponentClient({ cookies });
 
-  if (params.category) {
-    processedSearchParams.categories = [decodeURIComponent(params.category)];
-  }
-
-  if (params.subcategory) {
-    processedSearchParams.sub_categories = processedSearchParams.sub_categories
-      ? [
-          decodeURIComponent(params.subcategory),
-          ...processedSearchParams.sub_categories,
-        ]
-      : [decodeURIComponent(params.subcategory)];
+  if (params.topic) {
+    processedSearchParams.topics = processedSearchParams.topics
+      ? [decodeURIComponent(params.topic), ...processedSearchParams.topics]
+      : [decodeURIComponent(params.topic)];
   }
 
   const dbFilter = {
-    categories: [decodeURIComponent(params.category)],
-    sub_categories: processedSearchParams.sub_categories
-      ? [
-          decodeURIComponent(params.subcategory),
-          ...processedSearchParams.sub_categories,
-        ]
-      : [decodeURIComponent(params.subcategory)],
-    topics: processedSearchParams.topics,
+    categories: processedSearchParams.categories,
+    sub_categories: processedSearchParams.sub_categories,
+    topics: processedSearchParams.topics
+      ? [decodeURIComponent(params.topic), ...processedSearchParams.topics]
+      : [decodeURIComponent(params.topic)],
     rating: processedSearchParams.rating,
     levels: processedSearchParams.levels,
     languages: processedSearchParams.languages,
@@ -208,17 +197,20 @@ export default async function Category({
     ];
   }
   if (data["languages"]) filtersMetaData["languages"] = data["languages"];
-  if (data["topics"]) filtersMetaData["topics"] = data["topics"];
+  if (data["topics"])
+    filtersMetaData["topics"] = data["topics"]?.filter(
+      (t: any) => t.topic_name !== params.topic
+    );
 
   return (
     <main className="max-w-7xl mx-auto p-3">
       <h1 className="text-4xl font-bold mb-2">
-        {decodeURIComponent(params.category)} courses
+        {decodeURIComponent(params.topic)} courses
       </h1>
       <SideFilterMenu
         filtersMetaData={filtersMetaData}
         searchParams={processedSearchParams}
-        hideFilters={["sub_category"]}
+        hideFilters={[]}
       >
         <>
           <CoursesList searchParams={processedSearchParams} />

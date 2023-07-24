@@ -30,7 +30,7 @@ export default async function Navbar() {
         </div>
         <div className="relative group hidden md:block">
           <button className="group-hover:text-primary-blue">Categories</button>
-          <div className="hidden absolute top-6 py-6 group-hover:block">
+          <div className="hidden absolute top-6 py-6 group-hover:block z-50">
             <CategoriesMenu categories={category} />
           </div>
         </div>
