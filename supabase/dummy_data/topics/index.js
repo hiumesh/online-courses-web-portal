@@ -6,8 +6,6 @@ var path = require("path");
 var utils_1 = require("../utils");
 function generateTopics(sub_categories) {
     var topics = [];
-    var subCategoryTopics = new Set();
-    var topicsConnection = new Set();
     var jsonO = { map_category_topics: {}, map_topic_categories: {} };
     for (var idx = 1; idx < 2100; idx++) {
         topics.push("insert into public.topics (id, name) values (".concat(idx, ", '").concat(faker_1.faker.helpers
@@ -17,10 +15,7 @@ function generateTopics(sub_categories) {
     }
     for (var idx = 1; idx < 4000; idx++) {
         var topic_id = (0, utils_1.getRandomIntInclusive)(1, 2099);
-        var topic_ids = Object.keys(jsonO.map_topic_categories);
         var sub_category_id = sub_categories[(0, utils_1.getRandomIntInclusive)(1, sub_categories.length - 1)];
-        subCategoryTopics.add("insert into public.sub_category_topics (topic_id, sub_category_id) values (".concat(topic_id, ", ").concat(sub_category_id, ");"));
-        topicsConnection.add("insert into public.topic_connections (from_id, to_id) values (".concat(topic_ids[(0, utils_1.getRandomIntInclusive)(0, topic_ids.length - 1)], ", ").concat(topic_ids[(0, utils_1.getRandomIntInclusive)(0, topic_ids.length - 1)], ");"));
         if (jsonO.map_category_topics[sub_category_id]) {
             jsonO.map_category_topics[sub_category_id].add(topic_id);
         }
@@ -36,9 +31,7 @@ function generateTopics(sub_categories) {
     Object.keys(jsonO.map_topic_categories).forEach(function (key) {
         return (jsonO.map_topic_categories[key] = Array.from(jsonO.map_topic_categories[key]));
     });
-    fs.appendFileSync(path.join("./supabase", "seed.sql"), topics
-        .join("\n")
-        .concat("\n", Array.from(subCategoryTopics).join("\n"), Array.from(topicsConnection).join("\n")));
+    fs.appendFileSync(path.join("./supabase", "seed.sql"), topics.join("\n"));
     console.log("Array of strings has been written to", "seed.sql");
     // fs.writeFileSync(
     //   path.join("./supabase/dummy_data/topics", "topics.json"),

@@ -20,10 +20,12 @@ interface CoursesListPropeTypes {
   };
 }
 
-interface CourseType {
+export interface CourseType {
   id: number;
   image: string;
   title: string;
+  category: string | { name: string };
+  sub_category: string | { name: string };
   short_description: string;
   instructors: string[];
   tags: string[];
@@ -76,8 +78,11 @@ function CourseCard({
   amount,
 }: CourseType) {
   return (
-    <div className="flex gap-2 pb-4 border-b last:border-none">
-      <div>
+    <Link
+      href={`/course/${id}`}
+      className="group flex gap-2 pb-4 border-b last:border-none"
+    >
+      <div className="group-hover:opacity-80">
         <Image src={image} width={350} height={200} alt="image" />
       </div>
       <div className="flex-1">
@@ -103,6 +108,6 @@ function CourseCard({
           ))}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

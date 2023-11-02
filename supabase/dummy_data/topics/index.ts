@@ -6,8 +6,6 @@ import { getRandomIntInclusive } from "../utils";
 
 export default function generateTopics(sub_categories: number[]) {
   const topics = [];
-  const subCategoryTopics = new Set();
-  const topicsConnection = new Set();
   const jsonO: {
     map_category_topics: { [index: number]: Set<number> | number[] };
     map_topic_categories: { [index: number]: Set<number> | number[] };
@@ -24,17 +22,8 @@ export default function generateTopics(sub_categories: number[]) {
 
   for (let idx = 1; idx < 4000; idx++) {
     let topic_id = getRandomIntInclusive(1, 2099);
-    const topic_ids = Object.keys(jsonO.map_topic_categories);
     let sub_category_id =
       sub_categories[getRandomIntInclusive(1, sub_categories.length - 1)];
-    subCategoryTopics.add(
-      `insert into public.sub_category_topics (topic_id, sub_category_id) values (${topic_id}, ${sub_category_id});`
-    );
-    topicsConnection.add(
-      `insert into public.topic_connections (from_id, to_id) values (${
-        topic_ids[getRandomIntInclusive(0, topic_ids.length - 1)]
-      }, ${topic_ids[getRandomIntInclusive(0, topic_ids.length - 1)]});`
-    );
     if (jsonO.map_category_topics[sub_category_id]) {
       (jsonO.map_category_topics[sub_category_id] as Set<number>).add(topic_id);
     } else {
@@ -58,16 +47,7 @@ export default function generateTopics(sub_categories: number[]) {
       ))
   );
 
-  fs.appendFileSync(
-    path.join("./supabase", "seed.sql"),
-    topics
-      .join("\n")
-      .concat(
-        "\n",
-        Array.from(subCategoryTopics).join("\n"),
-        Array.from(topicsConnection).join("\n")
-      )
-  );
+  fs.appendFileSync(path.join("./supabase", "seed.sql"), topics.join("\n"));
   console.log("Array of strings has been written to", "seed.sql");
 
   // fs.writeFileSync(
