@@ -1,8 +1,7 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import SideFilterMenu from "@/components/side-filter-menu";
 import CoursePagination from "@/components/pagination";
 import CoursesList from "@/components/courses_list";
-import { cookies } from "next/headers";
 import { defaultFiltersForSearchPage } from "@/lib/defaults";
 
 interface CategoryPropeTypes {
@@ -99,7 +98,7 @@ export default async function Category({
   searchParams,
 }: CategoryPropeTypes) {
   const processedSearchParams = processSearchQuery(searchParams);
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createClient();
 
   if (params.category) {
     processedSearchParams.categories = [decodeURIComponent(params.category)];

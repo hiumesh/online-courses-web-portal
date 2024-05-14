@@ -1,5 +1,4 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
 
 import SideFilterMenu from "../../../../components/side-filter-menu";
 import { defaultFiltersForSearchPage } from "@/lib/defaults";
@@ -94,7 +93,7 @@ export default async function SearchPage({
   searchParams,
 }: SearchPagePropeTypes) {
   const processedSearchParams = processSearchQuery(searchParams);
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createClient();
   const dbFilter = {
     q: processedSearchParams.q,
     topics: processedSearchParams.topics,

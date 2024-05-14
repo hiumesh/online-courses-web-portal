@@ -1,4 +1,4 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import Image from "next/image";
@@ -41,7 +41,7 @@ export default async function CoursesList({
   searchParams,
 }: CoursesListPropeTypes) {
   console.log(searchParams);
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createClient();
   const dbFilter = {
     ...searchParams,
     page_size: 20,

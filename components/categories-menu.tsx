@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 
 export interface SubCategory {
@@ -27,7 +27,7 @@ interface CategoriesMenuPropeTypes {
 export default function CategoriesMenu({
   categories,
 }: CategoriesMenuPropeTypes) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [mainCategory, setMainCategory] = useState<Category | null>(null);
   const [subCategory, setSubCategory] = useState<string | null>(null);
   const [topics, setTopics] = useState<{

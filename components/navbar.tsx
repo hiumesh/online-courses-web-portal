@@ -1,9 +1,7 @@
 import Image from "next/image";
-import { cookies } from "next/headers";
 import {
-  User,
-  createServerComponentClient,
-} from "@supabase/auth-helpers-nextjs";
+  createClient,
+} from "@/utils/supabase/server";
 
 import logo from "@/assets/images/svgs/Logo2.svg";
 import CategoriesMenu from "./categories-menu";
@@ -13,9 +11,10 @@ import Search from "./search";
 import data from "@/lib/fake-data.json";
 import Link from "next/link";
 import { UserNav } from "./user-nav";
+import { User } from "@supabase/supabase-js";
 
 export default async function Navbar() {
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createClient();
   let { data: category, error } = await supabase
     .from("category")
     .select(`id, name, sub_category ( id, name )`);

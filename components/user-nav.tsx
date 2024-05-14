@@ -1,7 +1,7 @@
 "use client";
 
 import { LogOut, Settings } from "lucide-react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,14 +15,15 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User as UserT } from "@supabase/auth-helpers-nextjs";
+import { User } from "@supabase/supabase-js";
+
 
 interface UserNavPropeTypes {
-  user: UserT;
+  user: User;
 }
 
 export function UserNav({ user }: UserNavPropeTypes) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const router = useRouter();
 
   const handleSignOut = async () => {

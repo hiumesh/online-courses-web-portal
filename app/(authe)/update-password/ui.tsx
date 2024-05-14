@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
 export default function ResetPasswordUI() {
@@ -10,7 +10,7 @@ export default function ResetPasswordUI() {
   const [cPassword, setCPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState<null | string>(null);
   const [loading, setLoading] = useState(false);
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const router = useRouter();
 
   const handlePasswordUpdate = async (e: FormEvent<HTMLFormElement>) => {

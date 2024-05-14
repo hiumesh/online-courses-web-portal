@@ -1,5 +1,4 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
 import { CourseType } from "@/components/courses_list";
 import RatingStar from "@/components/rating-star";
 
@@ -10,7 +9,7 @@ interface CoursePagePropeTypes {
 }
 
 export default async function CoursePage({ params }: CoursePagePropeTypes) {
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createClient();
 
   const { data: resData, error } = await supabase
     .from("courses")
