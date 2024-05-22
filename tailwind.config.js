@@ -2,11 +2,12 @@
 module.exports = {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
+  prefix: "",
   theme: {
     container: {
       center: true,
@@ -19,7 +20,6 @@ module.exports = {
       colors: {
         "primary-blue": "#0000FF",
         text: "#000000",
-        background: "#e4eff1",
         "primary-button": "#487d89",
         "secondary-button": "#fcfdfd",
         blueShades: {
