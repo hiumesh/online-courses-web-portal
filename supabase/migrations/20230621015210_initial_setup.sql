@@ -204,6 +204,51 @@ from
 group by
   courses.id, category.id, sub_category.id, price.id;
 
+create or replace view
+  courses_lg as
+select
+  courses.id,
+  courses.image,
+  courses.title,
+  courses.short_description,
+  courses.enrollment_count,
+  courses.created_at,
+  category.name as category,
+  sub_category.name as sub_category,
+  courses.avg_rating,
+  courses.is_paid,
+  courses.level,
+  price.amount as amount,
+  courses.meta_data,
+  courses.language,
+  courses.review_count,
+  json_agg(distinct tags.name) as tag,
+  json_agg(distinct topics.name) as topic,
+  json_agg(
+    distinct json_build_object(
+      'user_id',
+      user_profile.user_id,
+      'username',
+      user_profile.username
+    )::jsonb
+  ) as instructor
+from
+  courses
+  join category on category.id = courses.category
+  join sub_category on sub_category.id = courses.sub_category
+  left join price on price.course_id = courses.id
+  left join course_tags on course_tags.course_id = courses.id
+  left join tags on tags.id = course_tags.tag_id
+  join course_instructor on course_instructor.course_id = courses.id
+  join user_profile on course_instructor.user_id = user_profile.user_id
+  join course_topics on course_topics.course_id = courses.id
+  join topics on topics.id = course_topics.topic_id
+group by
+  courses.id,
+  category.id,
+  sub_category.id,
+  price.id;
+
 create or replace view topic_main_and_sub_category as
 select topics.name, json_agg(distinct category.name) as category, json_agg(distinct sub_category.name) as sub_category
 from
