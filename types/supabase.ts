@@ -9,7 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      category: {
+      cart_courses: {
+        Row: {
+          cart_id: number
+          course_id: number
+        }
+        Insert: {
+          cart_id: number
+          course_id: number
+        }
+        Update: {
+          cart_id?: number
+          course_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_courses_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses_lg"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses_md"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses_sm"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carts: {
+        Row: {
+          id: number
+          type: Database["public"]["Enums"]["carts_status_enum"]
+          user_id: string
+        }
+        Insert: {
+          id?: number
+          type: Database["public"]["Enums"]["carts_status_enum"]
+          user_id: string
+        }
+        Update: {
+          id?: number
+          type?: Database["public"]["Enums"]["carts_status_enum"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
         Row: {
           created_at: string | null
           description: string | null
@@ -30,7 +107,7 @@ export type Database = {
         }
         Relationships: []
       }
-      course_instructor: {
+      course_instructors: {
         Row: {
           course_id: number
           user_id: string
@@ -45,35 +122,35 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "course_instructor_course_id_fkey"
+            foreignKeyName: "course_instructors_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_instructor_course_id_fkey"
+            foreignKeyName: "course_instructors_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_lg"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_instructor_course_id_fkey"
+            foreignKeyName: "course_instructors_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_md"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_instructor_course_id_fkey"
+            foreignKeyName: "course_instructors_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_sm"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_instructor_user_id_fkey"
+            foreignKeyName: "course_instructors_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -81,7 +158,7 @@ export type Database = {
           },
         ]
       }
-      course_review: {
+      course_reviews: {
         Row: {
           body: string
           course_id: number
@@ -108,35 +185,35 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "course_review_course_id_fkey"
+            foreignKeyName: "course_reviews_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_review_course_id_fkey"
+            foreignKeyName: "course_reviews_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_lg"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_review_course_id_fkey"
+            foreignKeyName: "course_reviews_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_md"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_review_course_id_fkey"
+            foreignKeyName: "course_reviews_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_sm"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_review_user_id_fkey"
+            foreignKeyName: "course_reviews_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -144,7 +221,48 @@ export type Database = {
           },
         ]
       }
-      course_section: {
+      course_section_contents: {
+        Row: {
+          created_at: string | null
+          id: number
+          order_index: number
+          resources: Json | null
+          section_id: number
+          title: string
+          type: Database["public"]["Enums"]["course_section_contents_type_enum"]
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          order_index: number
+          resources?: Json | null
+          section_id: number
+          title: string
+          type: Database["public"]["Enums"]["course_section_contents_type_enum"]
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          order_index?: number
+          resources?: Json | null
+          section_id?: number
+          title?: string
+          type?: Database["public"]["Enums"]["course_section_contents_type_enum"]
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_section_contents_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "course_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_sections: {
         Row: {
           course_id: number
           created_at: string | null
@@ -168,72 +286,31 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "course_section_course_id_fkey"
+            foreignKeyName: "course_sections_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_section_course_id_fkey"
+            foreignKeyName: "course_sections_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_lg"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_section_course_id_fkey"
+            foreignKeyName: "course_sections_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_md"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_section_course_id_fkey"
+            foreignKeyName: "course_sections_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_sm"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      course_section_content: {
-        Row: {
-          created_at: string | null
-          id: number
-          order_index: number
-          resources: Json | null
-          section_id: number
-          title: string
-          type: Database["public"]["Enums"]["course_section_content_type_enum"]
-          url: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: number
-          order_index: number
-          resources?: Json | null
-          section_id: number
-          title: string
-          type: Database["public"]["Enums"]["course_section_content_type_enum"]
-          url: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: number
-          order_index?: number
-          resources?: Json | null
-          section_id?: number
-          title?: string
-          type?: Database["public"]["Enums"]["course_section_content_type_enum"]
-          url?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "course_section_content_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "course_section"
             referencedColumns: ["id"]
           },
         ]
@@ -345,7 +422,7 @@ export type Database = {
           avg_rating: number
           category: number
           created_at: string | null
-          enrollment_count: number
+          enrollments_count: number
           id: number
           image: string | null
           is_paid: Database["public"]["Enums"]["course_access_enum"]
@@ -362,7 +439,7 @@ export type Database = {
           avg_rating?: number
           category: number
           created_at?: string | null
-          enrollment_count?: number
+          enrollments_count?: number
           id?: number
           image?: string | null
           is_paid?: Database["public"]["Enums"]["course_access_enum"]
@@ -379,7 +456,7 @@ export type Database = {
           avg_rating?: number
           category?: number
           created_at?: string | null
-          enrollment_count?: number
+          enrollments_count?: number
           id?: number
           image?: string | null
           is_paid?: Database["public"]["Enums"]["course_access_enum"]
@@ -394,71 +471,68 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "courses_category_fkey"
+            foreignKeyName: "courses_categories_fkey"
             columns: ["category"]
             isOneToOne: false
-            referencedRelation: "category"
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "courses_sub_category_fkey"
+            foreignKeyName: "courses_sub_categories_fkey"
             columns: ["sub_category"]
             isOneToOne: false
-            referencedRelation: "sub_category"
+            referencedRelation: "sub_categories"
             referencedColumns: ["id"]
           },
         ]
       }
-      enrollment: {
+      enrollments: {
         Row: {
           course_id: number
           created_at: string | null
-          id: number
           user_id: string
         }
         Insert: {
-          course_id?: number
+          course_id: number
           created_at?: string | null
-          id?: number
           user_id: string
         }
         Update: {
           course_id?: number
           created_at?: string | null
-          id?: number
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "enrollment_course_id_fkey"
+            foreignKeyName: "enrollments_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "enrollment_course_id_fkey"
+            foreignKeyName: "enrollments_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_lg"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "enrollment_course_id_fkey"
+            foreignKeyName: "enrollments_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_md"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "enrollment_course_id_fkey"
+            foreignKeyName: "enrollments_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_sm"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "enrollment_user_id_fkey"
+            foreignKeyName: "enrollments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -466,7 +540,84 @@ export type Database = {
           },
         ]
       }
-      price: {
+      payment_sessions: {
+        Row: {
+          cart_id: number
+          created_at: string | null
+          id: number
+          status: Database["public"]["Enums"]["payment_sessions_status_enum"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cart_id: number
+          created_at?: string | null
+          id?: number
+          status: Database["public"]["Enums"]["payment_sessions_status_enum"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cart_id?: number
+          created_at?: string | null
+          id?: number
+          status?: Database["public"]["Enums"]["payment_sessions_status_enum"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_sessions_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: number
+          payment_sessions_id: number
+          status: Database["public"]["Enums"]["payments_status_enum"]
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: number
+          payment_sessions_id: number
+          status: Database["public"]["Enums"]["payments_status_enum"]
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: number
+          payment_sessions_id?: number
+          status?: Database["public"]["Enums"]["payments_status_enum"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_payment_sessions_id_fkey"
+            columns: ["payment_sessions_id"]
+            isOneToOne: false
+            referencedRelation: "payment_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prices: {
         Row: {
           amount: number | null
           course_id: number
@@ -496,28 +647,28 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "price_course_id_fkey"
+            foreignKeyName: "prices_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "price_course_id_fkey"
+            foreignKeyName: "prices_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_lg"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "price_course_id_fkey"
+            foreignKeyName: "prices_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_md"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "price_course_id_fkey"
+            foreignKeyName: "prices_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses_sm"
@@ -525,7 +676,7 @@ export type Database = {
           },
         ]
       }
-      sub_category: {
+      sub_categories: {
         Row: {
           category_id: number
           created_at: string | null
@@ -549,10 +700,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sub_category_category_id_fkey"
+            foreignKeyName: "sub_categories_categories_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "category"
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -593,7 +744,7 @@ export type Database = {
         }
         Relationships: []
       }
-      user_profile: {
+      user_profiles: {
         Row: {
           account_type: string
           avatar: string | null
@@ -620,7 +771,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_profile_user_id_fkey"
+            foreignKeyName: "user_profiles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
@@ -634,9 +785,9 @@ export type Database = {
         Row: {
           amount: number | null
           avg_rating: number | null
-          category: string | null
+          categories: string | null
           created_at: string | null
-          enrollment_count: number | null
+          enrollments_count: number | null
           id: number | null
           image: string | null
           instructor: Json | null
@@ -646,7 +797,7 @@ export type Database = {
           meta_data: Json | null
           review_count: number | null
           short_description: string | null
-          sub_category: string | null
+          sub_categories: string | null
           tag: Json | null
           title: string | null
           topic: Json | null
@@ -657,9 +808,9 @@ export type Database = {
         Row: {
           amount: number | null
           avg_rating: number | null
-          category: string | null
+          categories: string | null
           created_at: string | null
-          enrollment_count: number | null
+          enrollments_count: number | null
           id: number | null
           image: string | null
           instructor: Json | null
@@ -668,7 +819,7 @@ export type Database = {
           level: Database["public"]["Enums"]["course_level_enum"] | null
           review_count: number | null
           short_description: string | null
-          sub_category: string | null
+          sub_categories: string | null
           tag: Json | null
           title: string | null
           topic: Json | null
@@ -678,19 +829,19 @@ export type Database = {
       courses_sm: {
         Row: {
           avg_rating: number | null
-          category: string | null
+          categories: string | null
           id: number | null
           is_paid: Database["public"]["Enums"]["course_access_enum"] | null
           language: Database["public"]["Enums"]["language_enum"] | null
           level: Database["public"]["Enums"]["course_level_enum"] | null
           short_description: string | null
-          sub_category: string | null
+          sub_categories: string | null
           title: string | null
           topic: Json | null
         }
         Relationships: []
       }
-      sub_category_topics: {
+      sub_categories_topics: {
         Row: {
           course_count: number | null
           name: string | null
@@ -698,11 +849,11 @@ export type Database = {
         }
         Relationships: []
       }
-      topic_main_and_sub_category: {
+      topic_main_and_sub_categories: {
         Row: {
-          category: Json | null
+          categories: Json | null
           name: string | null
-          sub_category: Json | null
+          sub_categories: Json | null
         }
         Relationships: []
       }
@@ -721,7 +872,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      get_category_filters: {
+      get_categories_filters: {
         Args: {
           categories: string[]
           sub_categories: string[]
@@ -729,7 +880,7 @@ export type Database = {
           levels: Database["public"]["Enums"]["course_level_enum"][]
           rating: number
           languages: Database["public"]["Enums"]["language_enum"][]
-          price: Database["public"]["Enums"]["course_access_enum"][]
+          prices: Database["public"]["Enums"]["course_access_enum"][]
         }
         Returns: Json
       }
@@ -742,7 +893,7 @@ export type Database = {
           levels: Database["public"]["Enums"]["course_level_enum"][]
           rating: number
           languages: Database["public"]["Enums"]["language_enum"][]
-          price: Database["public"]["Enums"]["course_access_enum"][]
+          prices: Database["public"]["Enums"]["course_access_enum"][]
           sort: string
           page_size: number
           p: number
@@ -752,7 +903,7 @@ export type Database = {
           image: string
           title: string
           short_description: string
-          enrollment_count: number
+          enrollments_count: number
           instructors: Json
           tags: Json
           is_paid: Database["public"]["Enums"]["course_access_enum"]
@@ -769,15 +920,22 @@ export type Database = {
           levels: Database["public"]["Enums"]["course_level_enum"][]
           rating: number
           languages: Database["public"]["Enums"]["language_enum"][]
-          price: Database["public"]["Enums"]["course_access_enum"][]
+          prices: Database["public"]["Enums"]["course_access_enum"][]
         }
         Returns: Json
       }
     }
     Enums: {
+      carts_status_enum:
+        | "ACTIVE"
+        | "PENDING"
+        | "CHECKED_OUT"
+        | "CANCELED"
+        | "FAILED"
+        | "ABANDONED"
       course_access_enum: "PAID" | "FREE"
       course_level_enum: "ALL_LEVELS" | "BEGINNER" | "INTERMEDIATE" | "EXPERT"
-      course_section_content_type_enum: "Video" | "Document"
+      course_section_contents_type_enum: "VIDEO" | "DOCUMENT" | "QUIZ"
       language_enum:
         | "English"
         | "Hindi"
@@ -790,6 +948,12 @@ export type Database = {
         | "Chinese"
         | "Russian"
         | "Other"
+      payment_sessions_status_enum:
+        | "PENDING"
+        | "COMPLETED"
+        | "FAILED"
+        | "CANCELED"
+      payments_status_enum: "PENDING" | "COMPLETED" | "FAILED" | "CANCELED"
     }
     CompositeTypes: {
       [_ in never]: never
