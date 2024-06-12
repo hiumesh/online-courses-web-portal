@@ -21,13 +21,12 @@ export default function SignInUI() {
     e.preventDefault();
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
+      email,
+      password,
     });
     if (error) {
       setErrorMsg(error.message);
     } else {
-      console.log(data);
       router.refresh();
     }
     setLoading(false);

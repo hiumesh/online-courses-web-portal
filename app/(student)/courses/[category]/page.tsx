@@ -2,8 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import SideFilterMenu from "../../../../components/side-filter-menu";
 import CoursePagination from "@/components/pagination";
 import CoursesList from "../../../../components/courses_list";
-import { cookies } from "next/headers";
 import { defaultFiltersForSearchPage } from "@/lib/defaults";
+import { Database } from "@/types/supabase";
 
 interface CategoryPropeTypes {
   params: {
@@ -69,9 +69,21 @@ const processSearchQuery = (searchParams: {
   }
 
   if (searchParams.levels) {
-    if (typeof searchParams.levels === "string")
+    if (
+      typeof searchParams.levels === "string" &&
+      ["ALL_LEVELS", "BEGINNER", "INTERMEDIATE", "EXPERT"].includes(
+        searchParams.levels
+      )
+    )
       filters["levels"] = [searchParams.levels];
-    else filters["levels"] = searchParams.levels;
+    else if (
+      typeof searchParams.levels === "object" &&
+      searchParams.levels.length &&
+      searchParams.levels.every((l) =>
+        ["ALL_LEVELS", "BEGINNER", "INTERMEDIATE", "EXPERT"].includes(l)
+      )
+    )
+      filters["levels"] = searchParams.levels;
   }
 
   if (searchParams.prices) {
@@ -104,21 +116,29 @@ export default async function Category({
     processedSearchParams.categories = [decodeURIComponent(params.category)];
   }
 
-
   const dbFilter = {
     categories: [decodeURIComponent(params.category)],
     sub_categories: processedSearchParams.sub_categories,
     topics: processedSearchParams.topics,
     rating: processedSearchParams.rating,
-    levels: processedSearchParams.levels,
-    languages: processedSearchParams.languages,
-    price: processedSearchParams.price,
+    levels: processedSearchParams.levels as
+      | Database["public"]["Enums"]["course_level_enum"][]
+      | null,
+    languages: processedSearchParams.languages as
+      | Database["public"]["Enums"]["language_enum"][]
+      | null,
+    price: processedSearchParams.price as
+      | Database["public"]["Enums"]["course_access_enum"][]
+      | null,
   };
 
-  const { data, error } = await supabase.rpc("get_category_filters", dbFilter);
+  const { data, error } = await supabase.rpc(
+    "get_categories_filters",
+    dbFilter
+  );
 
   if (error) {
-    console.log(error.message);
+    console.log(error);
     return <h1>Something went wrong! {error.message}</h1>;
   }
 

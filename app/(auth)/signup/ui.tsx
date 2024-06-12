@@ -35,7 +35,6 @@ export default function SignUp() {
       console.log(error);
       setErrorMsg(error.message);
     } else {
-      console.log(data);
       setEmailVerification(data.user?.email);
     }
     setLoading(false);

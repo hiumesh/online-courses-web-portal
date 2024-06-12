@@ -17,7 +17,7 @@ export interface Topics {
 export interface Category {
   id: any;
   name: any;
-  sub_category: SubCategory[];
+  sub_categories: SubCategory[];
 }
 
 interface CategoriesMenuPropeTypes {
@@ -44,7 +44,7 @@ export default function CategoriesMenu({
     setSubCategory(sc);
     setTopics({ data: [], loading: true });
     const { data: xtopics, error } = await supabase
-      .from("sub_category_topics")
+      .from("sub_categories_topics")
       .select("*")
       .eq("name", sc)
       .order("course_count")
@@ -65,7 +65,7 @@ export default function CategoriesMenu({
             href={`/courses/${c.name}`}
           >
             {c.name}
-            {c.sub_category.length && (
+            {c.sub_categories.length && (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="15"
@@ -85,9 +85,9 @@ export default function CategoriesMenu({
           </Link>
         ))}
       </ul>
-      {mainCategory?.sub_category.length ? (
+      {mainCategory?.sub_categories.length ? (
         <ul className="border-l p-3">
-          {mainCategory?.sub_category?.map((sc) => (
+          {mainCategory?.sub_categories?.map((sc) => (
             <Link
               className={`flex items-center justify-between py-1.5 gap-14 hover:text-primary-blue hover:cursor-pointer text-sm ${
                 sc.name == subCategory && "text-primary-blue"

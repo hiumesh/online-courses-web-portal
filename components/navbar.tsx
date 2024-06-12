@@ -10,14 +10,17 @@ import SideMenu from "./side-menu";
 import Search from "./search";
 import data from "@/lib/fake-data.json";
 import Link from "next/link";
-import { UserNav } from "./user-nav";
+import UserNav from "./user-nav";
 import { User } from "@supabase/supabase-js";
 
 export default async function Navbar() {
   const supabase = createClient();
   let { data: category, error } = await supabase
-    .from("category")
-    .select(`id, name, sub_category ( id, name )`);
+    .from("categories")
+    .select(`id, name, sub_categories ( id, name )`);
+
+  if (error) throw error;
+
   const session = await supabase.auth.getUser();
 
   return (

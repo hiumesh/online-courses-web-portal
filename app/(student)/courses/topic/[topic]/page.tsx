@@ -1,13 +1,13 @@
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/supabase/server";
 import SideFilterMenu from "@/components/side-filter-menu";
 import CoursePagination from "@/components/pagination";
 import CoursesList from "@/components/courses_list";
 import { defaultFiltersForSearchPage } from "@/lib/defaults";
+import { Database } from "@/types/supabase";
 
 interface CategoryPropeTypes {
   params: {
-    category: string;
-    subcategory: string;
+    topic: string;
   };
   searchParams: {
     rating?: string;
@@ -100,35 +100,34 @@ export default async function Category({
   const processedSearchParams = processSearchQuery(searchParams);
   const supabase = createClient();
 
-  if (params.category) {
-    processedSearchParams.categories = [decodeURIComponent(params.category)];
-  }
-
-  if (params.subcategory) {
-    processedSearchParams.sub_categories = processedSearchParams.sub_categories
-      ? [
-          decodeURIComponent(params.subcategory),
-          ...processedSearchParams.sub_categories,
-        ]
-      : [decodeURIComponent(params.subcategory)];
+  if (params.topic) {
+    processedSearchParams.topics = processedSearchParams.topics
+      ? [decodeURIComponent(params.topic), ...processedSearchParams.topics]
+      : [decodeURIComponent(params.topic)];
   }
 
   const dbFilter = {
-    categories: [decodeURIComponent(params.category)],
-    sub_categories: processedSearchParams.sub_categories
-      ? [
-          decodeURIComponent(params.subcategory),
-          ...processedSearchParams.sub_categories,
-        ]
-      : [decodeURIComponent(params.subcategory)],
-    topics: processedSearchParams.topics,
+    categories: processedSearchParams.categories,
+    sub_categories: processedSearchParams.sub_categories,
+    topics: processedSearchParams.topics
+      ? [decodeURIComponent(params.topic), ...processedSearchParams.topics]
+      : [decodeURIComponent(params.topic)],
     rating: processedSearchParams.rating,
-    levels: processedSearchParams.levels,
-    languages: processedSearchParams.languages,
-    price: processedSearchParams.price,
+    levels: processedSearchParams.levels as
+      | Database["public"]["Enums"]["course_level_enum"][]
+      | null,
+    languages: processedSearchParams.languages as
+      | Database["public"]["Enums"]["language_enum"][]
+      | null,
+    price: processedSearchParams.price as
+      | Database["public"]["Enums"]["course_access_enum"][]
+      | null,
   };
 
-  const { data, error } = await supabase.rpc("get_category_filters", dbFilter);
+  const { data, error } = await supabase.rpc(
+    "get_categories_filters",
+    dbFilter
+  );
 
   if (error) {
     console.log(error.message);
@@ -207,17 +206,20 @@ export default async function Category({
     ];
   }
   if (data["languages"]) filtersMetaData["languages"] = data["languages"];
-  if (data["topics"]) filtersMetaData["topics"] = data["topics"];
+  if (data["topics"])
+    filtersMetaData["topics"] = data["topics"]?.filter(
+      (t: any) => t.topic_name !== params.topic
+    );
 
   return (
     <main className="max-w-7xl mx-auto p-3">
       <h1 className="text-4xl font-bold mb-2">
-        {decodeURIComponent(params.category)} courses
+        {decodeURIComponent(params.topic)} courses
       </h1>
       <SideFilterMenu
         filtersMetaData={filtersMetaData}
         searchParams={processedSearchParams}
-        hideFilters={["sub_category"]}
+        hideFilters={[]}
       >
         <>
           <CoursesList searchParams={processedSearchParams} />

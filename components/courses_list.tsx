@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import Image from "next/image";
 import RatingStar from "@/components/rating-star";
 import CategoryTags from "@/components/category-tag";
+import { Database, Json } from "@/types/supabase";
 
 interface CoursesListPropeTypes {
   searchParams: {
@@ -24,31 +25,28 @@ export interface CourseType {
   id: number;
   image: string;
   title: string;
-  category: string | { name: string };
-  sub_category: string | { name: string };
   short_description: string;
-  instructors: string[];
-  tags: string[];
+  instructors: Json;
+  tags: Json;
   is_paid: string;
-  enrollment_count: number;
+  enrollments_count: number;
   avg_rating: number;
   review_count: number;
   level: string;
   amount: number;
 }
 
-export default async function CoursesList({
-  searchParams,
-}: CoursesListPropeTypes) {
-  console.log(searchParams);
+export default async function CoursesList({ searchParams }: CoursesListPropeTypes) {
   const supabase = createClient();
   const dbFilter = {
     ...searchParams,
     page_size: 20,
   };
 
-  //console.log(dbFilter);
-  const { data, error } = await supabase.rpc("get_courses_list", dbFilter);
+  const { data, error } = await supabase.rpc(
+    "get_courses_list",
+    dbFilter as Database["public"]["Functions"]["get_courses_list"]["Args"]
+  );
   console.log(error?.message);
   if (error) {
     <h1>{error.message}</h1>;
@@ -56,7 +54,7 @@ export default async function CoursesList({
 
   return (
     <div className="flex flex-col gap-4">
-      {(data as CourseType[])?.map((c) => (
+      {data?.map((c) => (
         <CourseCard key={c.id} {...c} />
       ))}
     </div>
@@ -71,7 +69,7 @@ function CourseCard({
   instructors,
   tags,
   is_paid,
-  enrollment_count,
+  enrollments_count,
   avg_rating,
   review_count,
   level,
@@ -89,7 +87,7 @@ function CourseCard({
         <h1 className="text-lg font-medium">{title}</h1>
         <p className="text-sm">{short_description}</p>
         <div>
-          {instructors.map((i) => (
+          {instructors?.map((i) => (
             <Link href="#" key={i} className="text-xs text-slate-500">
               {i}&nbsp;
             </Link>
@@ -100,10 +98,10 @@ function CourseCard({
         </RatingStar>
         <p className="text-sm text-slate-500">
           {level.charAt(0).toUpperCase() + level.slice(1).toLowerCase()}(
-          {enrollment_count})
+          {enrollments_count})
         </p>
         <div className="relative -left-2 mt-2">
-          {tags.map((t) => (
+          {tags?.map((t) => (
             <CategoryTags key={t}>{t}</CategoryTags>
           ))}
         </div>

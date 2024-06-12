@@ -14,5 +14,5 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "cSpell.words": ["fkey", "pkey", "supabase"]
+  "cSpell.words": ["fkey", "pkey", "Prope", "signin", "supabase", "Whishlist"]
 }

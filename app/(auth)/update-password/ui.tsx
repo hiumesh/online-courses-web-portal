@@ -23,7 +23,6 @@ export default function ResetPasswordUI() {
     const { data, error } = await supabase.auth.updateUser({
       password: password,
     });
-    console.log(data);
     if (error) {
       setErrorMsg(error.message);
     } else {

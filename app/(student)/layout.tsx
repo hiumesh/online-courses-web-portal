@@ -1,6 +1,6 @@
 import Navbar from "@/components/navbar";
 
-export default function SiteLayout({
+export default function StudentLayout({
   children,
 }: {
   children: React.ReactNode;
