@@ -3,7 +3,7 @@ import {
   createClient,
 } from "@/utils/supabase/server";
 
-import logo from "@/assets/images/svgs/Logo2.svg";
+import logo from "@/assets/svgs/Logo2.svg";
 import CategoriesMenu from "./categories-menu";
 import SearchBar from "./search-bar";
 import SideMenu from "./side-menu";

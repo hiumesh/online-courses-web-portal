@@ -22,7 +22,7 @@ export default async function Navbar({ session }: PropeTypes) {
   if (error) throw error;
 
   return (
-    <nav>
+    <nav className="w-full fixed bg-white border-b z-30">
       <MaxWidthWrapper className="flex p-2 justify-between items-center">
         <div></div>
         <div className="flex gap-6 items-center">

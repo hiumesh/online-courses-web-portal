@@ -11,6 +11,8 @@ export default async function InstructorLayout({
 
   const session = await supabase.auth.getUser();
 
+  console.log(session.error?.status);
+
   if (
     session.error?.message == "Auth session missing!" &&
     session.data.user === null
