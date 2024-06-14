@@ -2,6 +2,7 @@
 
 create type course_level_enum as enum ('ALL_LEVELS', 'BEGINNER', 'INTERMEDIATE', 'EXPERT');
 create type course_access_enum as enum ('PAID', 'FREE');
+create type course_status_enum as enum ('DRAFT', 'PUBLISHED');
 create type language_enum AS enum ('English', 'Hindi', 'Sanskrit', 'Spanish', 'French', 'German', 'Italian', 'Japanese', 'Chinese', 'Russian', 'Other');
 create type course_section_contents_type_enum as enum ('VIDEO', 'DOCUMENT', 'QUIZ');
 create type carts_status_enum as enum ('ACTIVE', 'PENDING', 'CHECKED_OUT', 'CANCELED', 'FAILED', 'ABANDONED');
@@ -61,10 +62,11 @@ create table
     title text not null,
     short_description text null,
     category bigint not null,
-    sub_category bigint not null,
+    sub_category bigint null,
     level course_level_enum default 'ALL_LEVELS' not null,
-    language language_enum not null,
-    is_paid course_access_enum default 'PAID' not null,
+    language language_enum null,
+    status course_status_enum default 'DRAFT' not null,
+    instructor_progress smallint not null default '10'::smallint,
     meta_data json null,
     avg_rating decimal(10,2) default 0 not null,
     review_count bigint default 0 not null,
@@ -73,7 +75,13 @@ create table
     updated_at timestamp with time zone null default now(),
     constraint courses_pkey primary key (id),
     constraint courses_categories_fkey foreign key (categories) references categories (id) on delete restrict,
-    constraint courses_sub_categories_fkey foreign key (sub_categories) references sub_categories (id) on delete restrict
+    constraint courses_sub_categories_fkey foreign key (sub_categories) references sub_categories (id) on delete restrict,
+    constraint courses_instructor_progress_check check (
+      (
+        (instructor_progress <= 100)
+        and (instructor_progress > 0)
+      )
+    )
   ) tablespace pg_default;
 
 create table
@@ -249,28 +257,28 @@ create index idx_search_courses on courses using gin(to_tsvector('english', titl
 -- views
 
 create or replace view courses_sm as
-select courses.id, courses.title, courses.short_description, categories.name as category, sub_categories.name as sub_category, courses.avg_rating, courses.language, courses.is_paid, courses.level, json_agg(topics.name) as topic
+select courses.id, courses.title, courses.short_description, categories.name as category, sub_categories.name as sub_category, courses.avg_rating, courses.language, courses.level, json_agg(topics.name) as topic
 from
   courses
   join categories on categories.id = courses.category
-  join sub_categories on sub_categories.id = courses.sub_category
-  join course_topics on course_topics.course_id = courses.id
-  join topics on topics.id = course_topics.topic_id
+  left join sub_categories on sub_categories.id = courses.sub_category
+  left join course_topics on course_topics.course_id = courses.id
+  left join topics on topics.id = course_topics.topic_id
 group by
   courses.id, categories.name, sub_categories.name;
 
 create or replace view courses_md as
-select courses.id, courses.image, courses.title, courses.short_description, courses.enrollments_count, courses.created_at, categories.name as category, sub_categories.name as sub_category, courses.avg_rating, courses.is_paid, courses.level, prices.amount as amount,  courses.language, courses.review_count, json_agg(distinct tags.name) as tag, json_agg(distinct topics.name) as topic, json_agg(distinct user_profiles.username) as instructor
+select courses.id, courses.image, courses.title, courses.short_description, courses.enrollments_count, courses.created_at, categories.name as category, sub_categories.name as sub_category, courses.avg_rating, courses.level, prices.amount as amount,  courses.language, courses.review_count, json_agg(distinct tags.name) as tag, json_agg(distinct topics.name) as topic, json_agg(distinct user_profiles.username) as instructor
 from
   courses
   join categories on categories.id = courses.category
-  join sub_categories on sub_categories.id = courses.sub_category
+  left join sub_categories on sub_categories.id = courses.sub_category
   left join prices on prices.course_id = courses.id
   left join course_tags on course_tags.course_id = courses.id
   left join tags on tags.id = course_tags.tag_id
   join course_instructors on course_instructors.course_id = courses.id
   join user_profiles on course_instructors.user_id = user_profiles.user_id
-  join course_topics on course_topics.course_id = courses.id
+  left join course_topics on course_topics.course_id = courses.id
   join topics on topics.id = course_topics.topic_id
 group by
   courses.id, categories.id, sub_categories.id, prices.id;
@@ -287,7 +295,6 @@ select
   categories.name as category,
   sub_categories.name as sub_category,
   courses.avg_rating,
-  courses.is_paid,
   courses.level,
   prices.amount as amount,
   courses.meta_data,
@@ -306,13 +313,13 @@ select
 from
   courses
   join categories on categories.id = courses.category
-  join sub_categories on sub_categories.id = courses.sub_category
+  left join sub_categories on sub_categories.id = courses.sub_category
   left join prices on prices.course_id = courses.id
   left join course_tags on course_tags.course_id = courses.id
   left join tags on tags.id = course_tags.tag_id
   join course_instructors on course_instructors.course_id = courses.id
   join user_profiles on course_instructors.user_id = user_profiles.user_id
-  join course_topics on course_topics.course_id = courses.id
+  left join course_topics on course_topics.course_id = courses.id
   join topics on topics.id = course_topics.topic_id
 group by
   courses.id,
@@ -820,6 +827,154 @@ begin
 end;
 $$
 language plpgsql;
+
+create or replace function public.create_new_course(
+  user_id uuid,
+  title text,
+  category_id bigint
+) returns void as $$
+declare course_id bigint;
+begin
+  insert into courses (title, category) values (title, category_id) returning id into course_id;
+  insert into course_instructors (course_id, user_id) values (course_id, user_id);
+end;
+$$ language plpgsql;
+
+create
+or replace function public.get_user_courses (
+  u_id uuid,
+  query text,
+  sort text,
+  page_size integer
+) returns table (
+  id bigint,
+  image text,
+  status course_status_enum,
+  title text,
+  instructor_progress int2
+) as $$
+declare 
+  response json;
+begin
+  if sort = 'oldest' then
+      return query select
+        c.id,
+        c.image,
+        c.status,
+        c.title,
+        c.instructor_progress
+      from
+        courses c
+        inner join course_instructors on course_instructors.course_id = c.id
+        and course_instructors.user_id = u_id
+      where
+        (
+          query is null
+          or to_tsvector('english', c.title) @@ to_tsquery('english', query)
+        )
+      order by
+        c.created_at asc
+      limit page_size;
+  elseif sort = 'atoz' then
+      return query select
+        c.id,
+        c.image,
+        c.status,
+        c.title,
+        c.instructor_progress
+      from
+        courses c
+        inner join course_instructors on course_instructors.course_id = c.id
+        and course_instructors.user_id = u_id
+      where
+        (
+          query is null
+          or to_tsvector('english', c.title) @@ to_tsquery('english', query)
+        )
+      order by
+        c.title asc
+      limit page_size;
+  elseif sort = 'ztoa' then
+      return query select
+        c.id,
+        c.image,
+        c.status,
+        c.title,
+        c.instructor_progress
+      from
+        courses c
+        inner join course_instructors on course_instructors.course_id = c.id
+        and course_instructors.user_id = u_id
+      where
+        (
+          query is null
+          or to_tsvector('english', c.title) @@ to_tsquery('english', query)
+        )
+      order by
+        c.title desc
+      limit page_size;
+  elseif sort = 'publishedFirst' then
+      return query select
+        c.id,
+        c.image,
+        c.status,
+        c.title,
+        c.instructor_progress
+      from
+        courses c
+        inner join course_instructors on course_instructors.course_id = c.id
+        and course_instructors.user_id = u_id
+      where
+        (
+          query is null
+          or to_tsvector('english', c.title) @@ to_tsquery('english', query)
+        )
+      order by
+        case c.status when 'PUBLISHED' then 1 else 2 end asc,
+        created_at desc
+      limit page_size;
+  elseif sort = 'unpublishedFirst' then
+      return query select
+        c.id,
+        c.image,
+        c.status,
+        c.title,
+        c.instructor_progress
+      from
+        courses c
+        inner join course_instructors on course_instructors.course_id = c.id
+        and course_instructors.user_id = u_id
+      where
+        (
+          query is null
+          or to_tsvector('english', c.title) @@ to_tsquery('english', query)
+        )
+      order by
+        case c.status when 'DRAFT' then 1 else 2 end asc,
+        created_at desc
+      limit page_size;
+  else
+      return query select
+        c.id,
+        c.image,
+        c.status,
+        c.title,
+        c.instructor_progress
+      from
+        courses c
+        inner join course_instructors on course_instructors.course_id = c.id
+        and course_instructors.user_id = u_id
+      where
+        (
+          query is null
+          or to_tsvector('english', c.title) @@ to_tsquery('english', query)
+        )
+      order by
+        c.created_at desc
+      limit page_size;
+  end if;
+end;
+$$ language plpgsql;
 
 -- triggers
 
